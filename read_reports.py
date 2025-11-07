@@ -215,7 +215,14 @@ def read_config(config_file_path, config):
 
 
 def fill_source_report(report: Report, analysis: Analysis):
-    source_df = pd.read_csv(report.source_report_path)
+    # loop over the file line by line
+    source_report_content = ''
+    with open(report.source_report_path, 'r', encoding='utf-8') as fin:
+        for line_num, line in enumerate(fin):
+            if line.startswith('#') and line_num > 0:
+                break
+            source_report_content += line
+    source_df = pd.read_csv(StringIO(source_report_content))
     for i in range(len(source_df)):
         analysis.source_lines.append(None)
     current_filename = source_df.iat[0, 1]
