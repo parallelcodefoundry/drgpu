@@ -15,17 +15,17 @@ def add_to_tmp_stats(stats, final_stat_name, current_stat, suffix='', prefix='')
         stats[final_stat_name].prefix = prefix
 
 
-def common_function_pattern(stats, pattern, name_list=[], prefix='', suffix=''):
+def common_function_pattern(stats, pattern, name_list=None, prefix='', suffix=''):
     tmp_stats = {}
     reg = re.compile(pattern)
     for stat_name in stats:
         results = reg.findall(stat_name)
         if results:
-            if pattern.endswith('_q\d+'):
+            if pattern.endswith(r'_q\d+'):
                 tmp_name = stat_name[:-3]
             else:
                 tmp_name = stat_name
-            if (name_list and tmp_name in name_list) or (not name_list):
+            if (name_list and tmp_name in name_list) or (name_list is None):
                 add_to_tmp_stats(tmp_stats, tmp_name, stats[stat_name], prefix=prefix, suffix=suffix)
     return tmp_stats
 
@@ -81,13 +81,13 @@ def preface_mem_stats(stats, memory_metrics, config):
     ggeld_line_reg = re.compile(r"inst_mem_(gld)?(geld)?_(\d+)b")
     sum_requests = 0
     sum_bytes = 0
-    for stat_name in lds_stats:
+    for stat_name, stat_value in lds_stats.items():
         line_byte = 0
         line_requests = 0
         result0 = ggeld_line_reg.findall(stat_name)
         if result0 and (result0[0] != '' or result0[1] != ''):
             line_byte = int(result0[0][2]) / 8
-            line_requests = lds_stats[stat_name].value
+            line_requests = stat_value.value
         sum_requests += line_requests
         sum_bytes += line_byte * line_requests
 
@@ -307,7 +307,7 @@ def long_scoreboard_latency(stats, memory_metrics, config):
     l1_miss_rate = memory_metrics.l1_miss_rate
     # L1
     ld_div_rif = 1
-    total = 0
+    #total = 0
     # lines_per_instruction
     lpl1 = stats["l1_lines_per_instruction_avg"].value
     l1_latency = config.L1_LATENCY_FIX + 2 * (lpl1 - 1)

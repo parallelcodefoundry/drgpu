@@ -211,12 +211,12 @@ def memory_suggest(hw_tree, stats, bottleneck_unit, memory_metrics, config):
         utlb_node = find_node(hw_tree, "throughput_utlb")
         if not utlb_node:
             return
-            if memory_metrics.l1_hit_rate < config.low_l1_hit_rate:
-                add_suggestion(utlb_node,
-                               r"Try to reduce the L1 miss rate to reduce utilization of uTLB.")
-            if memory_metrics.l1_lines_per_instruction and memory_metrics.l1_lines_per_instruction > high_l1_lines_per_instruction:
-                add_suggestion(utlb_node,
-                               r"Try to rearrange your data access strides to read fewer uTLB entries per load.")
+        if memory_metrics.l1_hit_rate < config.low_l1_hit_rate:
+            add_suggestion(utlb_node,
+                            r"Try to reduce the L1 miss rate to reduce utilization of uTLB.")
+        if memory_metrics.l1_lines_per_instruction and memory_metrics.l1_lines_per_instruction > high_l1_lines_per_instruction:
+            add_suggestion(utlb_node,
+                            r"Try to rearrange your data access strides to read fewer uTLB entries per load.")
 
     l1tlb_node = find_node(hw_tree, "throughput_l1tlb")
     if (not l1tlb_node):
@@ -334,7 +334,7 @@ def common_more_warps_suggestion(target_node, stats, hw_tree, suffix, config):
                            activewarps_per_activecycle) + suffix)
 
 
-def add_suggestion(target_node: Node, content, prefix=''):
+def add_suggestion(target_node: Node | None, content, prefix=''):
     if not target_node:
         print("Failed to add suggestion:", content)
         return

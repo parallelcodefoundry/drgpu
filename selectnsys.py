@@ -1,10 +1,8 @@
 #!/usr/bin/python3
-from sys import argv
-import pandas as pd
 import os
 import re
 import argparse
-
+import pandas as pd
 
 reports_with_path = {}
 execute_name = ''
@@ -24,7 +22,7 @@ def get_execute_name(reports_path, a_execute_name=''):
     if a_execute_name:
         execute_name = a_execute_name
 
-    for parent, dirnames, filenames in os.walk(reports_path,  followlinks=True):
+    for parent, _, filenames in os.walk(reports_path,  followlinks=True):
         for filename in filenames:
             file_path = os.path.join(parent, filename)
             reports_with_path[filename] = file_path
@@ -117,7 +115,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     get_execute_name(args.report_path, args.execute_name)
-    
+
     gpu_kernel_time()
     cuda_api()
     gpu_mem_size()

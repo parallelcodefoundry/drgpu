@@ -14,8 +14,8 @@ VALUE_TYPE_FLOAT = 1
 # The value is float but has percentage meaning
 VALUE_TYPE_PERCENTAGE = 2
 # highlight this path in final memory latency branch
-MEMORY_LATENCY_HIERARCHY = [('avg_latency', 'l1_latency'), ('l1_latency', 'tlb_latency'), ('tlb_latency', "l2_latency"),
-                            ('l2_latency', 'fb_latency')]
+MEMORY_LATENCY_HIERARCHY = [('avg_latency', 'l1_latency'), ('l1_latency', 'tlb_latency'),
+                            ('tlb_latency', 'l2_latency'), ('l2_latency', 'fb_latency')]
 
 
 class Report:
@@ -69,7 +69,7 @@ class Stat:
     def __init__(self, aname='', araw_name='', avalue=0):
         self.name = aname
         self.raw_name = araw_name
-        # todo: every stat's default value is 0?
+        #TODO: every stat's default value is 0?
         self.value = avalue
         self.value_type = None
         self.suffix = ''
@@ -119,12 +119,12 @@ class Stat:
         if not self.SMs_value:
             print("SMs_value is empty")
             return
-        tmp_max_v = max(self.SMs_value.values())
-        tmp_max_sms = [
-            _ for _ in self.SMs_value if self.SMs_value[_] == tmp_max_v]
-        tmp_min_v = min(self.SMs_value.values())
-        tmp_min_sms = [
-            _ for _ in self.SMs_value if self.SMs_value[_] == tmp_min_v]
+        #tmp_max_v = max(self.SMs_value.values())
+        #tmp_max_sms = [
+        #    _ for _ in self.SMs_value if self.SMs_value[_] == tmp_max_v]
+        #tmp_min_v = min(self.SMs_value.values())
+        #tmp_min_sms = [
+        #    _ for _ in self.SMs_value if self.SMs_value[_] == tmp_min_v]
 
 
 class Node:

@@ -1,7 +1,7 @@
 import gzip
 import json
-from data_struct import Node, Stat, Unit, SHOW_AS_RAW_VALUE, SHOW_AS_PERCENTAGE, LATENCY_NODE
 import functools
+from data_struct import Node, Stat, Unit, SHOW_AS_RAW_VALUE, SHOW_AS_PERCENTAGE, LATENCY_NODE
 from unit_hunt import add_l1_stats, add_utlb_stats, add_l1tlb_stats
 from unit_hunt import add_l2_stats, add_fb_stats
 
@@ -37,7 +37,7 @@ def build_unit(unit_name, path):
     stats = unit_json['results']['stat']
     unit = Unit(unit_name)
     for stat in stats:
-        # todo fileter partial hw counters
+        #TODO fileter partial hw counters
         astat = Stat()
         astat.raw_name = stat['name']
         astat.content = stat.get('content')
@@ -65,7 +65,7 @@ def build_unit(unit_name, path):
     unit.stats[sol_name] = astat
 
     # filter valus in XX_instances.json.gz
-    # todo check wether the file exists
+    #TODO check wether the file exists
     # with gzip.open(path + "/" + unit_name + "_instances.json.gz", 'rt', encoding='utf8') as zipfile:
     #    unit_json = json.load(zipfile)
     # instances = unit_json['instances']

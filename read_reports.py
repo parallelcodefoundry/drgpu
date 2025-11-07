@@ -26,13 +26,13 @@ def fill_report_ncu(report):
 def select_all_counters_ncu(raw_counters_df, stats, kernel_id):
     raw_counters_df_first = raw_counters_df[kernel_id + 1:kernel_id + 2]
     missing = False
-    for counter_name in counters.counters_name_map_for_ncu:
-        cname_in_ncu = counters.counters_name_map_for_ncu[counter_name][0]
+    for counter_name, counter_value in counters.counters_name_map_for_ncu.items():
+        cname_in_ncu = counter_value[0]
         if cname_in_ncu not in raw_counters_df_first.columns:
             missing = True
             print("The report doesn't has this counter: %s -> %s" % (counter_name, cname_in_ncu))
         else:
-            as_type = counters.counters_name_map_for_ncu[counter_name][1]
+            as_type = counter_value[1]
             tmp_stat = Stat(counter_name, cname_in_ncu)
             # if raw_counters_df_first.loc[kernel_id + 1, cname_in_ncu] != 'nan':
 
@@ -43,7 +43,7 @@ def select_all_counters_ncu(raw_counters_df, stats, kernel_id):
                 pass
     fill_missing_counters_ncu(raw_counters_df_first, stats, kernel_id)
     if missing:
-        # @todo for debug, comment this temporarily.
+        # For debug, uncomment this temporarily.
         # exit(3)
         pass
 
@@ -89,7 +89,7 @@ def fill_missing_counters_ncu(raw_counters_df_first, stats, kernel_id):
     stats['inst_mem_ldgsts_32b'] = Stat('inst_mem_ldgsts_32b', 'missing', 0)
     stats['inst_mem_ldgsts_64b'] = Stat('inst_mem_ldgsts_64b', 'missing', 0)
     stats['inst_mem_ldgsts_128b'] = Stat('inst_mem_ldgsts_128b', 'missing', 0)
-    # @todo bug: inst related counters of rodinia/myocyte are nan. However, it do have memory operations.
+    #TODO bug: inst related counters of rodinia/myocyte are nan. However, it do have memory operations.
     inst_mem_32b = convert_raw_item(
         raw_counters_df_first.loc[kernel_id + 1, 'sm__sass_inst_executed_op_memory_32b.sum']) + convert_raw_item(
         raw_counters_df_first.loc[kernel_id + 1, 'sm__sass_inst_executed_op_memory_8b.sum']) + convert_raw_item(
@@ -243,14 +243,13 @@ def fill_source_report(report: Report, analysis: Analysis):
         code_line.line_number = line_number
         code_line.file_name = current_filename
         analysis.source_lines[line_id] = code_line
-        for stall_reason in source_code_analysis.stalls_mapping_to_detail_report:
+        for stall_reason, stall_reason_value in source_code_analysis.stalls_mapping_to_detail_report.items():
             new_dict = {line_id: source_df.at[line_id, stall_reason]}
-            cur_stall_reason = analysis.stall_sass_code.get(
-                source_code_analysis.stalls_mapping_to_detail_report[stall_reason])
+            cur_stall_reason = analysis.stall_sass_code.get(stall_reason_value)
             if cur_stall_reason:
                 cur_stall_reason.update(new_dict)
             else:
-                analysis.stall_sass_code[source_code_analysis.stalls_mapping_to_detail_report[stall_reason]] = new_dict
+                analysis.stall_sass_code[stall_reason_value] = new_dict
 
 
 def convert_raw_item(aitem, as_type=float):
