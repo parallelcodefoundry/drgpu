@@ -1,8 +1,6 @@
-from data_struct import Node
-from data_struct import SOURCE_CODE_NODE
-from data_struct import config
-from gather import find_node
 import numpy as np
+from data_struct import Node, SOURCE_CODE_NODE
+from gather import find_node
 
 
 class Source_Code_Line:
@@ -41,7 +39,7 @@ def add_one_source_code_node(target_node: Node, content, prefix=''):
     target_node.child.append(s_node)
 
 
-def add_source_code_nodes(tmpstats, hw_tree, analysis):
+def add_source_code_nodes(tmpstats, hw_tree, analysis, config):
     stall_sass_code = analysis.stall_sass_code
     lines = analysis.source_lines
     for stat_name in tmpstats:

@@ -1,7 +1,7 @@
-from data_struct import *
 import re
 import copy
 import numpy as np
+from data_struct import Stat, node_name_map_counter
 
 
 def add_to_tmp_stats(stats, final_stat_name, current_stat, suffix='', prefix=''):
@@ -51,12 +51,12 @@ def instruction_distribution(stats):
 def cant_dispatch(stats):
     return common_function_pattern(stats, r"cant_dispatch_(.*)", node_name_map_counter.keys(), suffix=" of dispatch stalls")
 
-def barrier(stats):
-    tmp_stats = {}
-    add_to_tmp_stats(tmp_stats, "block_size", )
+#def barrier(stats):
+#    tmp_stats = {}
+#    add_to_tmp_stats(tmp_stats, "block_size", )
 
 
-def preface_mem_stats(stats, memory_metrics):
+def preface_mem_stats(stats, memory_metrics, config):
     # common stuff
     elapsedClocks = stats['elapsedClocks'].value
     l1_hitrate_stat = stats['l1tex_hit_rate']
@@ -64,7 +64,7 @@ def preface_mem_stats(stats, memory_metrics):
 
     l1_miss_rate = 1 - l1_hitrate_stat.value / 100
     memory_metrics.l1_miss_rate = l1_miss_rate
-    
+
     memory_metrics.lpl1 = stats["l1_lines_per_instruction_avg"].value
 
     # calculate average bytes per requests and total lds
@@ -110,15 +110,15 @@ def preface_mem_stats(stats, memory_metrics):
 
     l1_RPC = memory_metrics.total_lds / elapsedClocks
     memory_metrics.l1_RPC = l1_RPC
-    
+
     # utlb miss rate
     utlb_miss_rate = stats['ltp_utlb_miss'].value / (stats['ltp_utlb_hit'].value + stats['ltp_utlb_miss'].value)
     memory_metrics.utlb_miss_rate = utlb_miss_rate
-    
+
     utlb_requests = stats['ltp_utlb_hit'].value + stats['ltp_utlb_miss'].value
     utlb_request_per_clock = utlb_requests / elapsedClocks
     memory_metrics.utlb_RPC = utlb_request_per_clock
-    
+
     # utlb_arb_stall
     utlb_arb_stall_rate = 1
     memory_metrics.utlb_arb_stall_rate = utlb_arb_stall_rate
@@ -130,7 +130,7 @@ def preface_mem_stats(stats, memory_metrics):
     # l2 miss rate
     l2_miss_rate = 1 - stats["l2_hit_rate"].value / 100
     memory_metrics.l2_miss_rate = l2_miss_rate
-    
+
     l2_bank_conflict_stat = stats['l2_bank_conflict']
     l2_data_bank_accesses_stat = stats['l2_data_bank_accesses']
     l2_bank_conflict_rate = l2_bank_conflict_stat.value / l2_data_bank_accesses_stat.value
@@ -138,7 +138,7 @@ def preface_mem_stats(stats, memory_metrics):
 
     if(stats['fb_accesses_per_activate'].value != -1):
         memory_metrics.access_per_activate = stats['fb_accesses_per_activate'].value
-    
+
     if(stats['average_dram_banks'].value != -1):
         memory_metrics.average_dram_banks = stats['average_dram_banks'].value
 
@@ -205,7 +205,7 @@ def add_fb_stats(fb_stats, stats, memory_metrics):
     l2_miss_rate_stat = Stat()
     l2_miss_rate_stat.value = memory_metrics.l2_miss_rate
     add_to_tmp_stats(fb_stats, "l2_miss_rate", l2_miss_rate_stat)
-    
+
     # access per activate. Ideal value is 16.
     if(memory_metrics.access_per_activate is not None):
         fb_accesses_per_activate_stat = stats['fb_accesses_per_activate']
@@ -219,14 +219,14 @@ def add_fb_stats(fb_stats, stats, memory_metrics):
         successful_compressions_stat = Stat('compression_success_rate', 'plc_total_successes/plc_total_evaluations')
         successful_compressions_stat.value = memory_metrics.compress_rate
         add_to_tmp_stats(fb_stats, "compression_success_rate", successful_compressions_stat)
-    
+
     if(stats['dram_turns'].value > 5):
         add_to_tmp_stats(fb_stats, "dram_turns", stats['dram_turns'])
     if(stats['dram_noReq'].value > 5):
         add_to_tmp_stats(fb_stats, "dram_noReq", stats['dram_noReq'])
 
-def long_scoreboard_throughput(stats, memory_metrics):
-    preface_mem_stats(stats, memory_metrics)
+def long_scoreboard_throughput(stats, memory_metrics, config):
+    preface_mem_stats(stats, memory_metrics, config)
 
     # L1 throughput
     l1_throughput = (1 - memory_metrics.l1_miss_rate) * memory_metrics.total_lds * \
@@ -301,7 +301,7 @@ def long_scoreboard_throughput(stats, memory_metrics):
     return bottleneck_unit, bottleneck_stats, memory_metrics
 
 
-def long_scoreboard_latency(stats, memory_metrics):
+def long_scoreboard_latency(stats, memory_metrics, config):
     latency_stats = {}
     sum_latency = 0
     l1_miss_rate = memory_metrics.l1_miss_rate
@@ -311,12 +311,12 @@ def long_scoreboard_latency(stats, memory_metrics):
     # lines_per_instruction
     lpl1 = stats["l1_lines_per_instruction_avg"].value
     l1_latency = config.L1_LATENCY_FIX + 2 * (lpl1 - 1)
-   
+
     latency_stats["l1_cycles"] = Stat(aname='l1_cycles', avalue=int(np.ceil(l1_latency)))
     l1_latency_stat_value = int(np.ceil(ld_div_rif * l1_latency))
     sum_latency += l1_latency_stat_value
     latency_stats["l1_latency"] = Stat(aname='l1_latency', avalue=l1_latency_stat_value)
-    
+
     #tlb
     if(stats['mmu_ack_latency'].value != -1):
         raw_tlb_latency = stats['mmu_ack_latency'].value
@@ -331,7 +331,7 @@ def long_scoreboard_latency(stats, memory_metrics):
         raw_tlb_latency += l1tlb_latency
         utlb_miss_rate = memory_metrics.utlb_miss_rate
         tlb_latency += int(np.ceil(l1_miss_rate * utlb_miss_rate * ld_div_rif * l1tlb_latency))
-    
+
     latency_stats["tlb_cycles"] = Stat(aname='tlb_cycles', avalue=int(np.ceil(raw_tlb_latency)))
     tlb_latency_stat_value = tlb_latency
     sum_latency += tlb_latency_stat_value
@@ -342,7 +342,7 @@ def long_scoreboard_latency(stats, memory_metrics):
         l2_latency = stats['gnic_latency'].value - memory_metrics.l2_miss_rate * stats['average_latency_reads'].value
     else:
         l2_latency = config.l2_latency
-    
+
     latency_stats["l2_cycles"] = Stat(aname='l2_cycles', avalue=int(np.ceil(l2_latency)))
     l2_cycle_stat_value = int(np.ceil(l1_miss_rate * ld_div_rif * l2_latency /
                                       memory_metrics.across_load_coalescing_ratio))
@@ -353,7 +353,7 @@ def long_scoreboard_latency(stats, memory_metrics):
         fb_latency = stats["average_latency_reads"].value
     else:
         fb_latency = config.fb_latency
-    
+
     latency_stats["fb_cycles"] = Stat(aname='fb_cycles', avalue=int(np.ceil(fb_latency)))
     fb_cycle_stat_value = int(np.ceil(l1_miss_rate * memory_metrics.l2_miss_rate * ld_div_rif * fb_latency /
                                       memory_metrics.across_load_coalescing_ratio))

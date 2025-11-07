@@ -9,11 +9,10 @@ import dot_graph
 import suggestions
 import read_reports
 import source_code_analysis
-from data_struct import Node, Analysis, Report, config
+from data_struct import Node, Analysis, Report, Memory_Metrics, Configuration
 
-def work(report, dot_graph_name, memoryconfig):
-    global memory_metrics
-    read_reports.read_config(memoryconfig, config)
+def work(report, dot_graph_name, memoryconfig, memory_metrics, config):
+    config = read_reports.read_config(memoryconfig, config)
 
     analysis = Analysis()
     # {stat_name: stat, } type:{str: Stat}
@@ -55,9 +54,9 @@ def work(report, dot_graph_name, memoryconfig):
 
     # first level
     tmpstats = unit_hunt.warp_cant_issue(all_stats)
-    gather.add_sub_branch(tmpstats, hw_tree, 1)
+    gather.add_sub_branch(tmpstats, hw_tree, 1, config)
     if report.source_report_path is not None:
-        source_code_analysis.add_source_code_nodes(tmpstats, hw_tree, analysis)
+        source_code_analysis.add_source_code_nodes(tmpstats, hw_tree, analysis, config)
 
     # pipe utilization is the subbranch of shadow_pipe_throttle
     tmpstats = unit_hunt.pipe_utilization(all_stats)
@@ -65,7 +64,7 @@ def work(report, dot_graph_name, memoryconfig):
     if not target_node:
         print("Could not find the target node: warp_cant_issue_pipe_throttle")
     else:
-        gather.add_pipe_throttle_branch(tmpstats, target_node)
+        gather.add_pipe_throttle_branch(tmpstats, target_node, config)
 
     # instruction distribution is the subbranch of wait
     tmpstats = unit_hunt.instruction_distribution(all_stats)
@@ -73,7 +72,7 @@ def work(report, dot_graph_name, memoryconfig):
     if not target_node:
         print("Could not find the target node: warp_cant_issue_wait")
     else:
-        gather.add_sub_branch(tmpstats, target_node, 1)
+        gather.add_sub_branch(tmpstats, target_node, 1, config)
 
     # warp_cant_issue_dispatch_stall
     tmpstats = unit_hunt.cant_dispatch(all_stats)
@@ -81,13 +80,13 @@ def work(report, dot_graph_name, memoryconfig):
     if not target_node:
         print("Could not find the target node: warp_cant_issue_dispatch")
     else:
-        gather.add_sub_branch(tmpstats, target_node, 1)
+        gather.add_sub_branch(tmpstats, target_node, 1, config)
 
     target_node = gather.find_node(hw_tree, "warp_cant_issue_lg_throttle")
     if not target_node:
         print("Could not find the target node: warp_cant_issue_lg_throttle")
     else:
-        gather.add_lg_throttle_branch(all_stats, target_node)
+        gather.add_lg_throttle_branch(all_stats, target_node, config)
 
     # target_node = gather.find_node(hw_tree, "warp_cant_issue_barrier")
     # if not target_node:
@@ -96,31 +95,31 @@ def work(report, dot_graph_name, memoryconfig):
     #     gather.add_sub_branch(tmpstats, target_node, 1)
 
     # warp_cant_issue_long_scoreboard memory
-    bottleneck_unit, bottleneck_stats, memory_metrics = unit_hunt.long_scoreboard_throughput(all_stats, memory_metrics)
+    bottleneck_unit, bottleneck_stats, memory_metrics = unit_hunt.long_scoreboard_throughput(all_stats, memory_metrics, config)
     long_scoreboard_node = gather.find_node(hw_tree, "warp_cant_issue_long_scoreboard")
-    latency_stats = unit_hunt.long_scoreboard_latency(all_stats, memory_metrics)
+    latency_stats = unit_hunt.long_scoreboard_latency(all_stats, memory_metrics, config)
     gather.add_sub_branch_for_longscoreboard_latency(latency_stats, long_scoreboard_node, all_stats, memory_metrics)
-    gather.add_sub_branch_for_longscoreboard_throughput(all_stats, bottleneck_unit, bottleneck_stats, long_scoreboard_node, 1)
+    gather.add_sub_branch_for_longscoreboard_throughput(all_stats, bottleneck_unit, bottleneck_stats, long_scoreboard_node, 1, config)
 
-    shared_mem_stats = unit_hunt.common_function_pattern(all_stats, 'shared_ld_(\d+)b_executed')
+    shared_mem_stats = unit_hunt.common_function_pattern(all_stats, r'shared_ld_(\d+)b_executed')
     gather.add_shared_memory_info(all_stats, shared_mem_stats, memory_metrics)
     target_node = gather.find_node(hw_tree, "warp_cant_issue_mio_throttle")
-    gather.add_branch_for_mio_throttle(all_stats, shared_mem_stats, memory_metrics, target_node)
+    gather.add_branch_for_mio_throttle(all_stats, shared_mem_stats, memory_metrics, target_node, config)
     target_node = gather.find_node(hw_tree, "warp_cant_issue_short_scoreboard")
-    gather.add_branch_for_short_scoreboard(all_stats, shared_mem_stats, memory_metrics, target_node)
+    gather.add_branch_for_short_scoreboard(all_stats, shared_mem_stats, memory_metrics, target_node, config)
 
     # suggestions part
     suggestions.pipe_suggest(hw_tree, all_stats)
-    suggestions.barrier_suggest(hw_tree, all_stats)
-    suggestions.branch_solving_suggest(hw_tree, all_stats)
+    suggestions.barrier_suggest(hw_tree, all_stats, config)
+    suggestions.branch_solving_suggest(hw_tree, all_stats, config)
     suggestions.dispatch_stall_suggest(hw_tree, all_stats)
-    suggestions.drain_suggest(hw_tree, all_stats)
+    suggestions.drain_suggest(hw_tree, all_stats, config)
     # imc_miss_suggest(hw_tree, all_stats)
     suggestions.lg_credit_throttle_suggest(hw_tree, all_stats)
-    suggestions.memory_suggest(hw_tree, all_stats, bottleneck_unit, memory_metrics)
+    suggestions.memory_suggest(hw_tree, all_stats, bottleneck_unit, memory_metrics, config)
     suggestions.membar_suggest(hw_tree, all_stats)
-    suggestions.mio_throttle_suggest(hw_tree, all_stats, shared_mem_stats)
-    suggestions.short_scoreboard_suggest(hw_tree, all_stats, shared_mem_stats)
+    suggestions.mio_throttle_suggest(hw_tree, all_stats, shared_mem_stats, config)
+    suggestions.short_scoreboard_suggest(hw_tree, all_stats, shared_mem_stats, config)
     suggestions.wait_suggestion(hw_tree, all_stats)
 
     dot_graph.build_dot_graph(hw_tree, "dots/" + dot_graph_name)
@@ -159,7 +158,9 @@ def main():
     print(report_path)
     print(args.source)
     report = Report(report_path, args.source, kernel_id)
-    work(report, args.output, memoryconfig)
+    memory_metrics = Memory_Metrics()
+    config = Configuration()
+    work(report, args.output, memoryconfig, memory_metrics, config)
 
 if __name__ == "__main__":
     main()

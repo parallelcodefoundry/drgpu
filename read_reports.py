@@ -1,17 +1,15 @@
-from gather import *
+import re
+import os
 import configparser
-import pandas as pd
 from io import StringIO
-import sys
-from counters import *
-from unit_hunt import common_function_pattern, add_to_tmp_stats
+import pandas as pd
+import counters
 import source_code_analysis
-from os import path
-import numpy as np
+from data_struct import Report, Analysis, Stat
 
 
 def fill_report_ncu(report):
-    with open(report.path, 'r') as fin:
+    with open(report.path, 'r', encoding='utf-8') as fin:
         raw_content = fin.read()
     reg = re.compile(r'"ID","Process ID","Process Name"[\s\S]+')
     content = reg.findall(raw_content)
@@ -28,13 +26,13 @@ def fill_report_ncu(report):
 def select_all_counters_ncu(raw_counters_df, stats, kernel_id):
     raw_counters_df_first = raw_counters_df[kernel_id + 1:kernel_id + 2]
     missing = False
-    for counter_name in counters_name_map_for_ncu:
-        cname_in_ncu = counters_name_map_for_ncu[counter_name][0]
+    for counter_name in counters.counters_name_map_for_ncu:
+        cname_in_ncu = counters.counters_name_map_for_ncu[counter_name][0]
         if cname_in_ncu not in raw_counters_df_first.columns:
             missing = True
             print("The report doesn't has this counter: %s -> %s" % (counter_name, cname_in_ncu))
         else:
-            as_type = counters_name_map_for_ncu[counter_name][1]
+            as_type = counters.counters_name_map_for_ncu[counter_name][1]
             tmp_stat = Stat(counter_name, cname_in_ncu)
             # if raw_counters_df_first.loc[kernel_id + 1, cname_in_ncu] != 'nan':
 
@@ -105,16 +103,16 @@ def fill_missing_counters_ncu(raw_counters_df_first, stats, kernel_id):
         raw_counters_df_first.loc[kernel_id + 1, 'sm__sass_inst_executed_op_shared_ld.sum'])
     inst_global_ld = convert_raw_item(
         raw_counters_df_first.loc[kernel_id + 1, 'sm__sass_inst_executed_op_global_ld.sum'])
-    inst_local_ld = convert_raw_item(raw_counters_df_first.loc[kernel_id + 1, 'sm__sass_inst_executed_op_local_ld.sum'])
+    #inst_local_ld = convert_raw_item(raw_counters_df_first.loc[kernel_id + 1, 'sm__sass_inst_executed_op_local_ld.sum'])
     # This counter's value > inst_gld + inst_lld + inst_sld. Maybe missing somethig in report.
     # inst_mem_ld = int(raw_counters_df_first.loc[1, 'sm__sass_inst_executed_op_ld.sum'].replace(',', ''))
-    inst_mem_ld = inst_global_ld + inst_shared_ld + inst_local_ld
+    #inst_mem_ld = inst_global_ld + inst_shared_ld + inst_local_ld
     inst_shared_st = convert_raw_item(
         raw_counters_df_first.loc[kernel_id + 1, 'sm__sass_inst_executed_op_shared_st.sum'])
-    inst_global_st = convert_raw_item(
-        raw_counters_df_first.loc[kernel_id + 1, 'sm__sass_inst_executed_op_global_st.sum'])
-    inst_local_st = convert_raw_item(raw_counters_df_first.loc[kernel_id + 1, 'sm__sass_inst_executed_op_local_st.sum'])
-    inst_mem_st = inst_shared_st + inst_global_st + inst_local_st
+    #inst_global_st = convert_raw_item(
+    #    raw_counters_df_first.loc[kernel_id + 1, 'sm__sass_inst_executed_op_global_st.sum'])
+    #inst_local_st = convert_raw_item(raw_counters_df_first.loc[kernel_id + 1, 'sm__sass_inst_executed_op_local_st.sum'])
+    #inst_mem_st = inst_shared_st + inst_global_st + inst_local_st
     # the inst_mem_Xb is not same to the sum of global/local/shared op numbers which is strange
     stats['inst_mem_shared_ld_32b'] = Stat('inst_mem_shared_ld_32b', 'missing',
                                            inst_shared_ld * (inst_mem_32b / inst_mem_Xb))
@@ -165,7 +163,7 @@ def fill_stats(stats, report):
 def read_config(config_file_path, config):
     if not config_file_path.startswith('/'):
         config_file_path = "mem_config/" + config_file_path
-    if not path.exists(config_file_path):
+    if not os.path.exists(config_file_path):
         print("Memory config file %s doesn't exist" % config_file_path)
         exit(1)
     else:
@@ -212,6 +210,7 @@ def read_config(config_file_path, config):
     config.max_number_of_showed_source_code_nodes = int(configparser_tmp['max_number_of_showed_source_code_nodes'])
     config.max_avtive_warps_per_SM = int(configparser_tmp['max_avtive_warps_per_SM'])
     config.compute_capability = int(configparser_tmp['compute_capability'])
+    return config
 
 
 def fill_source_report(report: Report, analysis: Analysis):
@@ -234,9 +233,11 @@ def fill_source_report(report: Report, analysis: Analysis):
             raw_line_content = raw_line_content.strip()
         code_line.raw_line = raw_line_content
         x = source_df.at[line_id, '#']
-        if np.isnan(x):
+        if pd.isna(x):
             current_filename = raw_line_content
             continue
+        elif not isinstance(x, (int, float)):
+            raise ValueError(f"Line number is not a number: {x!r}")
         else:
             line_number = int(x)
         code_line.line_number = line_number

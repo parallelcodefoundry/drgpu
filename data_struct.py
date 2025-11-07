@@ -97,10 +97,10 @@ class Stat:
     def merge(self, bstat):
         """Use this function to merge q0-q3"""
         self.value += bstat.value
-        # @todo belowing has bugs. That may be caused by different gpu has different number of SMs. 
+        #TODO belowing has bugs. That may be caused by different gpu has different number of SMs.
         # for sm in bstat.SMs_raw_value:
         #     b_tuple = bstat.SMs_raw_value[sm]
-        #     #@ todo there is a bug
+        #     #TODO there is a bug
         #     a_tuple = self.SMs_raw_value[sm]
         #     # The last one is the validity. Should I ignore it?
         #     new_tuple = (a_tuple[0] + b_tuple[0],
@@ -142,7 +142,7 @@ class Node:
         # 1: suggestion node
         self.type = atype
         # 0: show as raw value
-        # 1: show as percentage 
+        # 1: show as percentage
         self.show_percentage_or_value = SHOW_AS_PERCENTAGE
 
 

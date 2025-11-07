@@ -1,6 +1,6 @@
 import gzip
 import json
-from data_struct import *
+from data_struct import Node, Stat, Unit, SHOW_AS_RAW_VALUE, SHOW_AS_PERCENTAGE, LATENCY_NODE
 import functools
 from unit_hunt import add_l1_stats, add_utlb_stats, add_l1tlb_stats
 from unit_hunt import add_l2_stats, add_fb_stats
@@ -64,7 +64,7 @@ def build_unit(unit_name, path):
     astat.value = max_val
     unit.stats[sol_name] = astat
 
-    # filter valus in XX_instances.json.gz 
+    # filter valus in XX_instances.json.gz
     # todo check wether the file exists
     # with gzip.open(path + "/" + unit_name + "_instances.json.gz", 'rt', encoding='utf8') as zipfile:
     #    unit_json = json.load(zipfile)
@@ -93,7 +93,7 @@ def cmp(astat, bstat):
         return 0
 
 
-def add_sub_branch(stats, hw_tree, current_percentage, do_percent=True):
+def add_sub_branch(stats, hw_tree, current_percentage, config, do_percent=True):
     stats_list = list(stats.values())
     sum_value = 0
     for stat in stats_list:
@@ -116,7 +116,7 @@ def add_sub_branch(stats, hw_tree, current_percentage, do_percent=True):
         hw_tree.child.append(node)
 
 
-def add_pipe_throttle_branch(stats, hw_tree):
+def add_pipe_throttle_branch(stats, hw_tree, config):
     stats_list = list(stats.values())
     N = config.max_number_of_showed_nodes
     N = min(N, len(stats_list))
@@ -131,7 +131,7 @@ def add_pipe_throttle_branch(stats, hw_tree):
         hw_tree.child.append(node)
 
 
-def add_lg_throttle_branch(stats, target_node):
+def add_lg_throttle_branch(stats, target_node, config):
     activewarps_per_activecycle = stats['activewarps_per_activecycle'].value
     if (activewarps_per_activecycle > config.low_activewarps_per_activecycle):
         node = Node("concurrent_warps")
@@ -140,7 +140,7 @@ def add_lg_throttle_branch(stats, target_node):
         target_node.child.append(node)
 
 
-def add_sub_branch_for_longscoreboard_throughput(all_stats, bottleneck_unit, stats, target_node, current_percentage):
+def add_sub_branch_for_longscoreboard_throughput(all_stats, bottleneck_unit, stats, target_node, current_percentage, config):
     if not target_node:
         return
     # @todo
@@ -236,7 +236,7 @@ def add_shared_memory_info(stats, shared_mem_stats, memory_metrics):
         memory_metrics.shared_st_conflict_per_request = 0
 
 
-def add_branch_for_mio_throttle(all_stats, shared_mem_stats, memory_metrics, target_node):
+def add_branch_for_mio_throttle(all_stats, shared_mem_stats, memory_metrics, target_node, config):
     if not target_node:
         return
     if memory_metrics.shared_ld_conflict_per_request is not None and memory_metrics.shared_ld_conflict_per_request > config.conflict_high_threshold:
@@ -246,7 +246,7 @@ def add_branch_for_mio_throttle(all_stats, shared_mem_stats, memory_metrics, tar
         target_node.child.append(node)
 
 
-def add_branch_for_short_scoreboard(all_stats, shared_mem_stats, memory_metrics, target_node):
+def add_branch_for_short_scoreboard(all_stats, shared_mem_stats, memory_metrics, target_node, config):
     if not target_node:
         return
     if memory_metrics.shared_ld_conflict_per_request is not None and memory_metrics.shared_ld_conflict_per_request > config.conflict_high_threshold:

@@ -1,6 +1,6 @@
 from gather import find_node
 from data_struct import Node
-from data_struct import config, SUGGESTION_NODE
+from data_struct import SUGGESTION_NODE
 
 
 def mio_throttle_short_scoreboard_common_suggest(stats, shared_mem_stats, memory_metrics, conflict_high_threshold):
@@ -27,7 +27,7 @@ def mio_throttle_short_scoreboard_common_suggest(stats, shared_mem_stats, memory
     return conflict_suggestion, transaction_size_suggestion
 
 
-def mio_throttle_suggest(hw_tree, stats, shared_mem_stats):
+def mio_throttle_suggest(hw_tree, stats, shared_mem_stats, config):
     mio_node = find_node(hw_tree, "warp_cant_issue_mio_throttle")
     if not mio_node:
         return
@@ -43,7 +43,7 @@ def mio_throttle_suggest(hw_tree, stats, shared_mem_stats):
                        r"Fewer data conflicts can reduce the time for loads, and can help alleviate the throttle cycles.")
 
 
-def short_scoreboard_suggest(hw_tree, stats, shared_mem_stats):
+def short_scoreboard_suggest(hw_tree, stats, shared_mem_stats, config):
     short_scoreboard_node = find_node(hw_tree, "warp_cant_issue_short_scoreboard")
     if not short_scoreboard_node:
         return
@@ -59,7 +59,7 @@ def short_scoreboard_suggest(hw_tree, stats, shared_mem_stats):
         add_suggestion(short_scoreboard_node, "Try to use asynchronous shared memory copy.")
 
     common_more_warps_suggestion(short_scoreboard_node, stats, hw_tree,
-                                 "More warps may help hide the shared memory latency.")
+                                 "More warps may help hide the shared memory latency.", config)
     add_suggestion(short_scoreboard_node, r"Consider loop unrolling to hide shared memory and MIO latency.")
 
 
@@ -75,7 +75,7 @@ def pipe_suggest(hw_tree, stats):
                            r"Tensor cores can double the rate of FP64 ops in some cases. Investigate if your application can exploit them.")
 
 
-def barrier_suggest(hw_tree, stats):
+def barrier_suggest(hw_tree, stats, config):
     barrier_node = find_node(hw_tree, "warp_cant_issue_barrier")
     if not barrier_node:
         return
@@ -87,7 +87,7 @@ def barrier_suggest(hw_tree, stats):
                        config.warp_size))
     else:
         common_more_warps_suggestion(barrier_node, stats, hw_tree,
-                                     "More concurrent warps may help reduce cycles wasted due to barriers.")
+                                     "More concurrent warps may help reduce cycles wasted due to barriers.", config)
     if config.compute_capability >= 80:
         add_suggestion(barrier_node, r"Try to use asynchronous barrier.")
 
@@ -111,7 +111,7 @@ def membar_suggest(hw_tree, stats):
     add_suggestion(membar_node, r"Try to reduce the scope of the memory barrier to warp or thread block")
 
 
-def branch_solving_suggest(hw_tree, stats):
+def branch_solving_suggest(hw_tree, stats, config):
     branch_solving_node = find_node(hw_tree, "warp_cant_issue_branch_resolving")
     if not branch_solving_node:
         return
@@ -122,14 +122,14 @@ def branch_solving_suggest(hw_tree, stats):
                                not_predicated_off_thread_per_inst_executed.value / config.max_not_predicated_off_thread_per_inst_executed * 100))
 
 
-def drain_suggest(hw_tree, stats):
+def drain_suggest(hw_tree, stats, config):
     drain_node = find_node(hw_tree, "warp_cant_issue_drain")
     if not drain_node:
         return
     add_suggestion(drain_node,
                    r"Try to move the burst of global memory stores away from the kernel end to earlier in the execution.")
     common_more_warps_suggestion(drain_node, stats, hw_tree,
-                                 "More warps may help utilize the cycles wasted due to pending stores.")
+                                 "More warps may help utilize the cycles wasted due to pending stores.", config)
 
 
 def imc_miss_suggest(hw_tree, stats):
@@ -166,7 +166,7 @@ def lg_credit_throttle_suggest(hw_tree, stats):
                        r"Reducing concurrent warps may help.")
 
 
-def memory_suggest(hw_tree, stats, bottleneck_unit, memory_metrics):
+def memory_suggest(hw_tree, stats, bottleneck_unit, memory_metrics, config):
     occupancy_node = find_node(hw_tree, "occupancy")
     activewarps_per_activecycle = stats['activewarps_per_activecycle'].value
     if activewarps_per_activecycle < config.low_activewarps_per_activecycle:
@@ -226,9 +226,9 @@ def memory_suggest(hw_tree, stats, bottleneck_unit, memory_metrics):
     else:
         l1_miss_rate_node = find_node(l1tlb_node, "l1_miss_rate")
         if l1_miss_rate_node:
-            common_l1_miss_rate_suggestion(l1_miss_rate_node, memory_metrics)
+            common_l1_miss_rate_suggestion(l1_miss_rate_node, memory_metrics, config)
         else:
-            common_l1_miss_rate_suggestion(l1tlb_node, memory_metrics)
+            common_l1_miss_rate_suggestion(l1tlb_node, memory_metrics, config)
         if memory_metrics.utlb_miss_rate is not None and memory_metrics.utlb_miss_rate >= config.high_utlb_miss_rate:
             utlb_miss_rate = find_node(l1tlb_node, "utlb_miss_rate")
             if utlb_miss_rate:
@@ -318,13 +318,13 @@ def wait_suggestion(hw_tree, stats):
                    r"Long-latency instructions consuming each other's results spaced too close together. Try to restructure or unroll to increase spacing.")
 
 
-def common_l1_miss_rate_suggestion(target_node, memory_metrics):
+def common_l1_miss_rate_suggestion(target_node, memory_metrics, config):
     if memory_metrics.l1_hit_rate < config.low_l1_hit_rate:
         add_suggestion(target_node,
                        r"Try to reduce the L1 miss rate to reduce utilization of the rest of memory heirarchy. You may be able to increase L1 size by reducing the shared memory size.")
 
 
-def common_more_warps_suggestion(target_node, stats, hw_tree, suffix):
+def common_more_warps_suggestion(target_node, stats, hw_tree, suffix, config):
     activewarps_per_activecycle = stats['activewarps_per_activecycle'].value
     if activewarps_per_activecycle < config.low_activewarps_per_activecycle and not find_node(
             hw_tree, "warp_cant_issue_mio_throttle"):
