@@ -141,26 +141,39 @@ def main():
                         metavar='The id of the kernel you want to analyze in exported csv files.',
                         required=False, dest='kernel_id', action='store')
     args = parser.parse_args()
-    report_path = args.report_path
-    if not args.memoryconfig:
+    launch(args.report_path, args.source, args.memoryconfig,
+           int(args.kernel_id) if args.kernel_id else None, args.output)
+
+
+def launch(report_path: str, source: str | None, memoryconfig: str | None, kernel_id: int | None,
+           output: str | None) -> None:
+    """
+    Launch the program with the given arguments.
+    Args:
+        report_path: The path of the report file.
+        source: The path of the source mapping report from NCU. NCU model only.
+        memoryconfig: The path of the memory config file or only file name in mem_config folder.
+        kernel_id: The id of the kernel you want to analyze in exported csv files.
+        output: The path of the output file to save the decision tree.
+    """
+    if memoryconfig is None:
         memoryconfig = sys.path[0] + '/mem_config/gtx1650.ini'
         print(
             "You didn't specify running platform for this report. DrGPU will use gtx1650.ini as default GPU configuration.")
     else:
-        memoryconfig = args.memoryconfig
         if not memoryconfig.endswith('.ini'):
             memoryconfig += '.ini'
         if not memoryconfig.startswith('/'):
             memoryconfig = sys.path[0] + "/mem_config/" + memoryconfig
-    kernel_id = 0
-    if args.kernel_id:
-        kernel_id = int(args.kernel_id)
+    if kernel_id is None:
+        kernel_id = 0
     print(report_path)
-    print(args.source)
-    report = Report(report_path, args.source, kernel_id)
+    print(source)
+    report = Report(report_path, source, kernel_id)
     memory_metrics = Memory_Metrics()
     config = Configuration()
-    work(report, args.output, memoryconfig, memory_metrics, config)
+    work(report, output, memoryconfig, memory_metrics, config)
+
 
 if __name__ == "__main__":
     main()
