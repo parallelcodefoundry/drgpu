@@ -145,3 +145,7 @@ dots/
 .idea/
 
 docs/_*
+
+# NCU Reports and csvs
+*.ncu-rep
+*.csv

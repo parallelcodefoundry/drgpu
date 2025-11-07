@@ -5,7 +5,7 @@ from io import StringIO
 import sys
 from counters import *
 from unit_hunt import common_function_pattern, add_to_tmp_stats
-from source_code_analysis import Source_Code_Line, stalls_mapping_to_detail_report
+import source_code_analysis
 from os import path
 import numpy as np
 
@@ -215,7 +215,6 @@ def read_config(config_file_path, config):
 
 
 def fill_source_report(report: Report, analysis: Analysis):
-    # loop over the file line by line
     source_report_content = ''
     with open(report.source_report_path, 'r', encoding='utf-8') as fin:
         for line_num, line in enumerate(fin):
@@ -227,7 +226,7 @@ def fill_source_report(report: Report, analysis: Analysis):
         analysis.source_lines.append(None)
     current_filename = source_df.iat[0, 1]
     for i in range(1, len(source_df)):
-        code_line = Source_Code_Line()
+        code_line = source_code_analysis.Source_Code_Line()
         line_id = source_df.index.values[i]
         # code_line.line_number = line_number
         raw_line_content = source_df.at[line_id, 'Source']
@@ -243,13 +242,14 @@ def fill_source_report(report: Report, analysis: Analysis):
         code_line.line_number = line_number
         code_line.file_name = current_filename
         analysis.source_lines[line_id] = code_line
-        for stall_reason in stalls_mapping_to_detail_report:
+        for stall_reason in source_code_analysis.stalls_mapping_to_detail_report:
             new_dict = {line_id: source_df.at[line_id, stall_reason]}
-            cur_stall_reason = analysis.stall_sass_code.get(stalls_mapping_to_detail_report[stall_reason])
+            cur_stall_reason = analysis.stall_sass_code.get(
+                source_code_analysis.stalls_mapping_to_detail_report[stall_reason])
             if cur_stall_reason:
                 cur_stall_reason.update(new_dict)
             else:
-                analysis.stall_sass_code[stalls_mapping_to_detail_report[stall_reason]] = new_dict
+                analysis.stall_sass_code[source_code_analysis.stalls_mapping_to_detail_report[stall_reason]] = new_dict
 
 
 def convert_raw_item(aitem, as_type=float):
