@@ -52,8 +52,8 @@ def work(report, dot_graph_name, memoryconfig, memory_metrics, config):
     best_possible = 100 * (
             1.0 - 1.0 / (np.ceil(all_stats['activewarps_per_activecycle'].value
                                  / config.quadrants_per_SM)))
-    hw_tree.suffix_label += f" (lowest possible: {best_possible}% for " \
-        + f"{all_stats['activewarps_per_activecycle'].value} active warps)"
+    hw_tree.suffix_label += f" (lowest possible: {int(best_possible)}% for " \
+        + f"{int(all_stats['activewarps_per_activecycle'].value)} active warps)"
     max_val = 0
     sol_unit = ""
     for unit in ['SM', 'L1', 'L2', 'Dram', 'Compute_Memory']:
@@ -182,7 +182,7 @@ def launch(report_path: str, source: str | None, memoryconfig: str | None, kerne
         output: path to the output decision tree file
     """
     if memoryconfig is None:
-        memoryconfig = sys.path[0] + '/mem_config/gtx1650.ini'
+        memoryconfig = sys.path[0] + '/../mem_config/gtx1650.ini'
         print(
             "You didn't specify running platform for this report. DrGPU will use gtx1650.ini " \
                 + "as the default GPU configuration.")
@@ -190,7 +190,7 @@ def launch(report_path: str, source: str | None, memoryconfig: str | None, kerne
         if not memoryconfig.endswith('.ini'):
             memoryconfig += '.ini'
         if not memoryconfig.startswith('/'):
-            memoryconfig = sys.path[0] + "/mem_config/" + memoryconfig
+            memoryconfig = sys.path[0] + "/../mem_config/" + memoryconfig
     if kernel_id is None:
         kernel_id = 0
     print(f"Report path: {report_path}")
