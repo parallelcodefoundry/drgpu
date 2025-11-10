@@ -1,6 +1,6 @@
 import re
 from graphviz import Digraph # type: ignore
-from data_struct import node_name_map_counter, NORMAL_TREE_NODE, \
+from drgpu.data_struct import node_name_map_counter, NORMAL_TREE_NODE, \
 SUGGESTION_NODE, SHOW_AS_PERCENTAGE, SOURCE_CODE_NODE, LATENCY_NODE, \
     Node, MEMORY_LATENCY_HIERARCHY
 

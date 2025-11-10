@@ -3,9 +3,9 @@ import os
 import configparser
 from io import StringIO
 import pandas as pd
-import counters
-import source_code_analysis
-from data_struct import Report, Analysis, Stat
+from drgpu import counters
+from drgpu import source_code_analysis
+from drgpu.data_struct import Report, Analysis, Stat
 
 
 def fill_report_ncu(report):
@@ -162,7 +162,7 @@ def fill_stats(stats, report):
 
 def read_config(config_file_path, config):
     if not config_file_path.startswith('/'):
-        config_file_path = "../mem_config/" + config_file_path
+        config_file_path = "mem_config/" + config_file_path
     if not os.path.exists(config_file_path):
         print("Memory config file %s doesn't exist" % config_file_path)
         exit(1)

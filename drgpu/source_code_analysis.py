@@ -1,6 +1,6 @@
 import numpy as np
-from data_struct import Node, SOURCE_CODE_NODE
-from gather import find_node
+from drgpu.data_struct import Node, SOURCE_CODE_NODE
+from drgpu.gather import find_node
 
 
 class Source_Code_Line:

@@ -1,7 +1,7 @@
 import re
 import copy
 import numpy as np
-from data_struct import Stat, node_name_map_counter
+from drgpu.data_struct import Stat, node_name_map_counter
 
 
 def add_to_tmp_stats(stats, final_stat_name, current_stat, suffix='', prefix=''):

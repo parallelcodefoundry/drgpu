@@ -1,9 +1,9 @@
 import gzip
 import json
 import functools
-from data_struct import Node, Stat, Unit, SHOW_AS_RAW_VALUE, SHOW_AS_PERCENTAGE, LATENCY_NODE
-from unit_hunt import add_l1_stats, add_utlb_stats, add_l1tlb_stats
-from unit_hunt import add_l2_stats, add_fb_stats
+from drgpu.data_struct import Node, Stat, Unit, SHOW_AS_RAW_VALUE, SHOW_AS_PERCENTAGE, LATENCY_NODE
+from drgpu.unit_hunt import add_l1_stats, add_utlb_stats, add_l1tlb_stats
+from drgpu.unit_hunt import add_l2_stats, add_fb_stats
 
 
 def filter_unit_name(all_names):
