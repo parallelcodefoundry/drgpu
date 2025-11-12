@@ -9,3 +9,6 @@ dependencies = [
     "graphviz>=0.20",
     "pandas-stubs>=2.3.0",
 ]
+
+[tool.setuptools]
+packages = ["drgpu"]
