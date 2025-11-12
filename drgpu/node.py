@@ -2,6 +2,7 @@
 This file contains the Node class and associated constants.
 """
 import re
+from typing import List, Any
 
 NORMAL_TREE_NODE = 0
 SUGGESTION_NODE = 1
@@ -38,6 +39,50 @@ class Node:
         self.show_percentage_or_value = SHOW_AS_PERCENTAGE
 
 
+    def get_tree_suggestions_str(self) -> str:
+        """Get a string of all suggestions in the tree with associated data and code nodes."""
+        suggestions = self.get_tree_suggestions()
+        result = ""
+        for suggestion in suggestions:
+            result += "Suggestion: " + suggestion.suggestion.get_label(linewidth=None) + "\n"
+            if suggestion.data is not None:
+                data_text = suggestion.data.get_label(linewidth=None).replace("\\n", ", ")
+                result += " * Associated delay reason: " + data_text + "\n"
+            if suggestion.code is not None:
+                code_text = suggestion.code.get_label(linewidth=None).replace("\\l", "\n")
+                result += " * Code:\n" + code_text
+            for other_node in suggestion.other:
+                other_text = other_node.get_label(linewidth=None).replace("\\n", ", ")
+                result += " * Additional detail: " + other_text + "\n"
+            result += "\n"
+        return result
+
+
+    def get_tree_suggestions(self) -> List[Any]:
+        """Get a list of all suggestions in the tree with associated data and code nodes."""
+        suggestions: List[Suggestion] = []
+        queue = [(self, self)]
+        cur_node: Node | None = None
+
+        while queue:
+            next_pair = queue.pop(0)
+            parent_node: Node = next_pair[0]
+            cur_node = next_pair[1]
+            if cur_node.type == SUGGESTION_NODE:
+                siblings: List[Node] = []
+                code_node: Node | None = None
+                for child in parent_node.child:
+                    if child.type == SOURCE_CODE_NODE:
+                        code_node = child
+                    elif child.type != SUGGESTION_NODE:
+                        siblings.append(child)
+                suggestions.append(Suggestion(cur_node, parent_node, code_node, siblings))
+            for child in cur_node.child:
+                queue.append((cur_node, child))
+
+        return suggestions
+
+
     def get_color(self) -> str:
         """Get the color of the node."""
         if self.type == SUGGESTION_NODE:
@@ -50,7 +95,7 @@ class Node:
             return 'lightgrey'
 
 
-    def get_label(self) -> str:
+    def get_label(self, linewidth: int | None = 25) -> str:
         """Get the formatted label of the node."""
         if self.name == 'root':
             alabel = self.name
@@ -67,7 +112,7 @@ class Node:
                             tmpstr = r"{:.2f}".format(self.percentage)
                         else:
                             tmpstr = self.percentage
-                alabel = r"%s\n" % (self._break_to_multiple_lines(tmp_nodename, 25))
+                alabel = r"%s\n" % (self._break_to_multiple_lines(tmp_nodename, linewidth))
                 if self.prefix_label:
                     alabel += r'%s' % self.prefix_label
                 alabel += r"%s" % str(tmpstr)
@@ -76,7 +121,7 @@ class Node:
             # suggestion node
             elif self.type == SUGGESTION_NODE:
                 # alabel = r"%s\n%s" % (tmp_nodename, break_to_multiple_lines(self.suffix_label, 25))
-                alabel = r"%s" % (self._break_to_multiple_lines(self.suffix_label, 25))
+                alabel = r"%s" % (self._break_to_multiple_lines(self.suffix_label, linewidth))
             elif self.type == SOURCE_CODE_NODE:
                 alabel = r"%s" % self.suffix_label
             else:
@@ -108,8 +153,12 @@ class Node:
         return tmp_nodename
 
 
-    def _break_to_multiple_lines(self, inp: str, char_per_line: int) -> str:
-        """Break the input string into multiple lines."""
+    def _break_to_multiple_lines(self, inp: str, char_per_line: int | None) -> str:
+        """Break the input string into multiple lines.
+           If char_per_line is None orzero or negative, return the input string without breaking.
+        """
+        if char_per_line is None or char_per_line <= 0:
+            return inp
         out = ""
         splits = re.split(r"\s", inp)
         cur_line = ""
@@ -128,6 +177,15 @@ class Node:
         if cur_line != "":
             out += cur_line
         return out
+
+
+class Suggestion:
+    """Wrapper for suggestion node and associated data and code nodes."""
+    def __init__(self, suggestion: Node, data: Node | None, code: Node | None, other: List[Node]):
+        self.suggestion = suggestion
+        self.data = data
+        self.code = code
+        self.other = other
 
 
 NODE_NAME_MAP_COUNTER = {

@@ -35,7 +35,9 @@ def main():
                          Path(args.source) if args.source else None,
                          int(args.kernel_id) if args.kernel_id else None)
     config = load_config(args.memoryconfig)
-    launch(report, config, output=args.output)
+    tree = launch(report, config, output=args.output)
+    print("\nSuggestions generated:")
+    print(tree.get_tree_suggestions_str(), end="")
 
 
 if __name__ == "__main__":

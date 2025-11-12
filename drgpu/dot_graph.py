@@ -6,30 +6,30 @@ colors = [
     "skyblue", "wheat", "thistle",
 ]
 
-
-def build_dot_graph(hw_tree, dot_file_name):
-    """Build the dot graph of the stall analysis decision tree."""
+def build_dot_graph(hw_tree: Node, dot_file_name: str):
+    """Build the dot graph of the stall analysis decision tree via BFS."""
     g = Digraph('hw tree')
     # [(father.name, child), ], have to record their father
-    theq = [(hw_tree.name, hw_tree)]
+    queue = [(hw_tree.name, hw_tree)]
     color_i = 0
 
-    # BFS to build the dot graph
-    while theq:
-        # get the first element in the queue
-        apair = theq.pop(0)
+    while queue:
+        # pop the next node from the queue
+        apair = queue.pop(0)
         cur_child: Node = apair[1]
         father_name = apair[0]
         node_shape = 'box'
 
-        # get the label and color of the node
         node_label = cur_child.get_label()
         node_color = cur_child.get_color()
 
         # add the node to the graph
-        # g.node(name=cur_child.name, label=alabel, style="filled", color=colors[color_i % len(colors)])
-        # g.node(name=cur_child.name, label=alabel, style="filled", color="/ylgn9/%d" % (9 - color_i%9))
-        g.node(name=cur_child.name, label=node_label, style="filled", color=node_color, shape=node_shape)
+        # g.node(name=cur_child.name, label=node_label, style="filled",
+        #        color=colors[color_i % len(colors)])
+        # g.node(name=cur_child.name, label=node_label, style="filled",
+        #        color="/ylgn9/%d" % (9 - color_i%9))
+        g.node(name=cur_child.name, label=node_label, style="filled", color=node_color,
+               shape=node_shape)
         color_i += 1
 
         # add the edge connecting the new node to the graph
@@ -47,8 +47,7 @@ def build_dot_graph(hw_tree, dot_file_name):
 
         # add the children of the current node to the queue
         for next_child in cur_child.child:
-            theq.append((cur_child.name, next_child))
+            queue.append((cur_child.name, next_child))
 
-    # render the graph
     g.format = 'svg'
     g.render(dot_file_name, view=False)
