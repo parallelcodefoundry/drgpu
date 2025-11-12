@@ -4,8 +4,69 @@ Main entry point file to parse arguments and launch DrGPU.
 """
 
 import argparse
+import configparser
+import sys
+from pathlib import Path
 
+from drgpu import read_reports
+from drgpu.data_struct import Configuration, Report
 from drgpu.drgpu_launch import launch
+
+
+def resolve_memory_config_path(config_arg: str | None) -> Path:
+    """
+    Resolve the memory config path.
+    Args:
+        config_arg: The memory config path or name.
+    Returns:
+        The memory config path.
+    """
+    base_dir = Path(sys.path[0])
+    if config_arg is None:
+        print("You didn't specify running platform for this report. DrGPU will use "
+                "gtx1650.ini as the default GPU configuration.")
+        return base_dir / 'mem_config' / 'gtx1650.ini'
+    config_name = config_arg if config_arg.endswith('.ini') else config_arg + '.ini'
+    config_path = Path(config_name)
+    if not config_path.is_absolute():
+        config_path = base_dir / 'mem_config' / config_name
+    return config_path
+
+
+def load_report_and_config(args: argparse.Namespace) -> tuple[Report, Configuration]:
+    """
+    Load the report and config from the arguments.
+    Args:
+        args: The arguments.
+    Returns:
+        The report and config.
+    """
+    report_path = Path(args.report_path)
+    report_content = report_path.read_text(encoding='utf-8')
+
+    source_path = Path(args.source) if args.source else None
+    source_content = None
+    if source_path:
+        source_content = source_path.read_text(encoding='utf-8')
+
+    memory_config_path = resolve_memory_config_path(args.memoryconfig)
+    if not memory_config_path.exists():
+        raise FileNotFoundError(f"Memory config file {memory_config_path} doesn't exist")
+    memory_config_content = memory_config_path.read_text(encoding='utf-8')
+    config_parser = configparser.ConfigParser()
+    config_parser.read_string(memory_config_content)
+    config = read_reports.read_config(config_parser, Configuration(),
+                                      source_name=str(memory_config_path))
+
+    report = Report(
+        path=str(report_path),
+        source_report_path=str(source_path) if source_path else None,
+        kernel_id=int(args.kernel_id) if args.kernel_id else 0,
+        report_content=report_content,
+        source_report_content=source_content,
+    )
+    return report, config
+
 
 def main():
     """
@@ -28,8 +89,9 @@ def main():
                         help='ID of the kernel you want to analyze.', required=False,
                         dest='kernel_id', action='store')
     args = parser.parse_args()
-    launch(args.report_path, args.source, args.memoryconfig,
-           int(args.kernel_id) if args.kernel_id else None, args.output)
+
+    report, config = load_report_and_config(args)
+    launch(report, config, output=args.output)
 
 
 if __name__ == "__main__":

@@ -9,8 +9,11 @@ from drgpu.data_struct import Report, Analysis, Stat
 
 
 def fill_report_ncu(report):
-    with open(report.path, 'r', encoding='utf-8') as fin:
-        raw_content = fin.read()
+    if getattr(report, 'report_content', None) is not None:
+        raw_content = report.report_content
+    else:
+        with open(report.path, 'r', encoding='utf-8') as fin:
+            raw_content = fin.read()
     reg = re.compile(r'"ID","Process ID","Process Name"[\s\S]+')
     content = reg.findall(raw_content)
     if not content:
@@ -160,66 +163,98 @@ def fill_stats(stats, report):
     select_all_counters_ncu(raw_counters_df, stats, report.kernel_id)
 
 
-def read_config(config_file_path, config):
-    if not config_file_path.startswith('/'):
-        config_file_path = "mem_config/" + config_file_path
-    if not os.path.exists(config_file_path):
-        print("Memory config file %s doesn't exist" % config_file_path)
-        exit(1)
+def read_config(config_source, config, *, source_name=None):
+    if isinstance(config_source, configparser.SectionProxy):
+        config_section = config_source
     else:
-        print('Use "%s" as memory config' % (config_file_path))
-    configparser_tmp = configparser.ConfigParser()
-    configparser_tmp.read(config_file_path)
-    configparser_tmp = configparser_tmp['Default']
-    config.warp_size = int(configparser_tmp['warp_size'])
-    config.quadrants_per_SM = int(configparser_tmp['quadrants_per_SM'])
-    config.max_number_of_showed_nodes = int(configparser_tmp['max_number_of_showed_nodes'])
-    config.max_percentage_of_showed_nodes = float(configparser_tmp['max_percentage_of_showed_nodes'])
-    config.L1_THROUGHPUT_FIX = float(configparser_tmp['L1_THROUGHPUT_FIX'])
-    config.uTLB_THROUGHPUT_FIX = float(configparser_tmp["uTLB_THROUGHPUT_FIX"])
-    config.L1_TLB_THROUGHPUT_FIX = float(configparser_tmp['L1_TLB_THROUGHPUT_FIX'])
-    config.BYTES_PER_L2_INSTRUCTION = int(configparser_tmp["BYTES_PER_L2_INSTRUCTION"])
-    config.BYTES_PER_L1_INSTRUCTION = int(configparser_tmp['BYTES_PER_L1_INSTRUCTION'])
-    config.L2_THROUGHPUT_FIX = float(configparser_tmp['L2_THROUGHPUT_FIX'])
-    config.FB_THROUGHPUT_FIX = float(configparser_tmp['FB_THROUGHPUT_FIX'])
-    config.conflict_high_threshold = float(configparser_tmp['conflict_high_threshold'])
-    config.low_activewarps_per_activecycle = int(configparser_tmp['low_activewarps_per_activecycle'])
-    config.L1_THROUGHPUT_PEAK = int(configparser_tmp['L1_THROUGHPUT_PEAK'])
-    config.high_l1_throughput = float(configparser_tmp['high_l1_throughput'])
-    config.high_l1_hit_rate = float(configparser_tmp['high_l1_hit_rate'])
-    config.high_l1_conflict_rate = float(configparser_tmp['high_l1_conflict_rate'])
-    config.low_access_per_activate = float(configparser_tmp['low_access_per_activate'])
-    config.low_bank_per_access = float(configparser_tmp['low_bank_per_access'])
-    config.within_load_coalescing_ratio = float(configparser_tmp['within_load_coalescing_ratio'])
-    config.low_l1_hit_rate = float(configparser_tmp['low_l1_hit_rate'])
-    config.high_utlb_miss_rate = float(configparser_tmp['high_utlb_miss_rate'])
-    config.high_l2_miss_rate = float(configparser_tmp['high_l2_miss_rate'])
-    config.high_l2_bank_conflict_rate = float(configparser_tmp['high_l2_bank_conflict_rate'])
+        parser = None
+        if isinstance(config_source, configparser.ConfigParser):
+            parser = config_source
+        elif isinstance(config_source, str):
+            parser = configparser.ConfigParser()
+            if '\n' not in config_source:
+                candidate_path = config_source
+                if not candidate_path.startswith('/'):
+                    alt_candidate = os.path.join("mem_config", candidate_path)
+                    if os.path.exists(alt_candidate):
+                        candidate_path = alt_candidate
+                if os.path.exists(candidate_path):
+                    read_files = parser.read(candidate_path)
+                    if not read_files:
+                        raise FileNotFoundError(f"Memory config file {candidate_path} doesn't exist")
+                    source_name = source_name or candidate_path
+                else:
+                    raise FileNotFoundError(f"Memory config file {candidate_path} doesn't exist")
+            else:
+                parser.read_string(config_source)
+        else:
+            raise TypeError("Unsupported config source type: %s" % type(config_source))
+        if 'Default' not in parser:
+            raise KeyError('Memory config must contain "Default" section.')
+        config_section = parser['Default']
+    if source_name:
+        print('Use "%s" as memory config' % source_name)
+    config.warp_size = int(config_section['warp_size'])
+    config.quadrants_per_SM = int(config_section['quadrants_per_SM'])
+    config.max_number_of_showed_nodes = int(config_section['max_number_of_showed_nodes'])
+    config.max_percentage_of_showed_nodes = float(config_section['max_percentage_of_showed_nodes'])
+    config.L1_THROUGHPUT_FIX = float(config_section['L1_THROUGHPUT_FIX'])
+    config.uTLB_THROUGHPUT_FIX = float(config_section["uTLB_THROUGHPUT_FIX"])
+    config.L1_TLB_THROUGHPUT_FIX = float(config_section['L1_TLB_THROUGHPUT_FIX'])
+    config.BYTES_PER_L2_INSTRUCTION = int(config_section["BYTES_PER_L2_INSTRUCTION"])
+    config.BYTES_PER_L1_INSTRUCTION = int(config_section['BYTES_PER_L1_INSTRUCTION'])
+    config.L2_THROUGHPUT_FIX = float(config_section['L2_THROUGHPUT_FIX'])
+    config.FB_THROUGHPUT_FIX = float(config_section['FB_THROUGHPUT_FIX'])
+    config.conflict_high_threshold = float(config_section['conflict_high_threshold'])
+    config.low_activewarps_per_activecycle = int(config_section['low_activewarps_per_activecycle'])
+    config.L1_THROUGHPUT_PEAK = int(config_section['L1_THROUGHPUT_PEAK'])
+    config.high_l1_throughput = float(config_section['high_l1_throughput'])
+    config.high_l1_hit_rate = float(config_section['high_l1_hit_rate'])
+    config.high_l1_conflict_rate = float(config_section['high_l1_conflict_rate'])
+    config.low_access_per_activate = float(config_section['low_access_per_activate'])
+    config.low_bank_per_access = float(config_section['low_bank_per_access'])
+    config.within_load_coalescing_ratio = float(config_section['within_load_coalescing_ratio'])
+    config.low_l1_hit_rate = float(config_section['low_l1_hit_rate'])
+    config.high_utlb_miss_rate = float(config_section['high_utlb_miss_rate'])
+    config.high_l2_miss_rate = float(config_section['high_l2_miss_rate'])
+    config.high_l2_bank_conflict_rate = float(config_section['high_l2_bank_conflict_rate'])
     config.high_not_predicated_off_thread_per_inst_executed = int(
-        configparser_tmp['high_not_predicated_off_thread_per_inst_executed'])
+        config_section['high_not_predicated_off_thread_per_inst_executed'])
     config.max_not_predicated_off_thread_per_inst_executed = int(
-        configparser_tmp['max_not_predicated_off_thread_per_inst_executed'])
-    config.low_compress_rate = float(configparser_tmp['low_compress_rate'])
-    config.L1_LATENCY_FIX = int(configparser_tmp['L1_LATENCY_FIX'])
-    config.uTLB_LATENCY_FIX = int(configparser_tmp['uTLB_LATENCY_FIX'])
-    config.l1TLB_LATENCY_FIX = int(configparser_tmp['l1TLB_LATENCY_FIX'])
-    config.l2_latency = int(configparser_tmp['l2_latency'])
-    config.fb_latency = int(configparser_tmp['fb_latency'])
+        config_section['max_not_predicated_off_thread_per_inst_executed'])
+    config.low_compress_rate = float(config_section['low_compress_rate'])
+    config.L1_LATENCY_FIX = int(config_section['L1_LATENCY_FIX'])
+    config.uTLB_LATENCY_FIX = int(config_section['uTLB_LATENCY_FIX'])
+    config.l1TLB_LATENCY_FIX = int(config_section['l1TLB_LATENCY_FIX'])
+    config.l2_latency = int(config_section['l2_latency'])
+    config.fb_latency = int(config_section['fb_latency'])
     config.max_percentage_of_showed_source_code_nodes = float(
-        configparser_tmp['max_percentage_of_showed_source_code_nodes'])
-    config.max_number_of_showed_source_code_nodes = int(configparser_tmp['max_number_of_showed_source_code_nodes'])
-    config.max_avtive_warps_per_SM = int(configparser_tmp['max_avtive_warps_per_SM'])
-    config.compute_capability = int(configparser_tmp['compute_capability'])
+        config_section['max_percentage_of_showed_source_code_nodes'])
+    config.max_number_of_showed_source_code_nodes = int(config_section['max_number_of_showed_source_code_nodes'])
+    config.max_avtive_warps_per_SM = int(config_section['max_avtive_warps_per_SM'])
+    config.compute_capability = int(config_section['compute_capability'])
     return config
 
 
+def collect_lines(handle):
+    filtered_lines = []
+    for line_num, line in enumerate(handle):
+        if line.startswith('#') and line_num > 0:
+            break
+        filtered_lines.append(line)
+    return ''.join(filtered_lines)
+
+
 def fill_source_report(report: Report, analysis: Analysis):
-    source_report_content = ''
-    with open(report.source_report_path, 'r', encoding='utf-8') as fin:
-        for line_num, line in enumerate(fin):
-            if line.startswith('#') and line_num > 0:
-                break
-            source_report_content += line
+    if getattr(report, 'source_report_content', None) is not None:
+        source_report_content = collect_lines(StringIO(report.source_report_content))
+    else:
+        if not report.source_report_path:
+            raise ValueError(
+                "Source report path is not provided and no in-memory content available."
+            )
+        with open(report.source_report_path, 'r', encoding='utf-8') as stream:
+            source_report_content = collect_lines(stream)
     source_df = pd.read_csv(StringIO(source_report_content))
     for i in range(len(source_df)):
         analysis.source_lines.append(None)

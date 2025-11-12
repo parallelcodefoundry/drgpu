@@ -3,7 +3,6 @@
 Launch the DrGPU tool.
 """
 import os
-import sys
 import numpy as np
 from drgpu import gather
 from drgpu import unit_hunt
@@ -13,27 +12,28 @@ from drgpu import read_reports
 from drgpu import source_code_analysis
 from drgpu.data_struct import Node, Analysis, Report, Memory_Metrics, Configuration
 
-def work(report, dot_graph_name, memoryconfig, memory_metrics, config):
+def work(report: Report, dot_graph_name: str | None, memory_metrics: Memory_Metrics,
+         config: Configuration):
     """
     Carry out the analysis and generate the decision tree.
     Args:
         report: The report object.
         dot_graph_name: The name of the dot graph.
-        memoryconfig: The path of the memory config file.
         memory_metrics: The memory metrics object.
         config: The configuration object.
     """
-    config = read_reports.read_config(memoryconfig, config)
-
     analysis = Analysis()
     # {stat_name: stat, } type:{str: Stat}
     all_stats = analysis.all_stats
     if dot_graph_name is None:
-        (_, dot_graph_name) = os.path.split(report.path)
-        (dot_graph_name, _) = os.path.splitext(dot_graph_name)
+        if report.path:
+            (_, dot_graph_name) = os.path.split(report.path)
+            (dot_graph_name, _) = os.path.splitext(dot_graph_name)
+        else:
+            dot_graph_name = "drgpu_report"
     # read reports and filter all useful stats
     read_reports.fill_stats(all_stats, report)
-    if report.source_report_path:
+    if report.source_report_path or getattr(report, 'source_report_content', None):
         read_reports.fill_source_report(report, analysis)
 
     hw_tree = Node('Idle')
@@ -67,7 +67,7 @@ def work(report, dot_graph_name, memoryconfig, memory_metrics, config):
     # first level
     tmpstats = unit_hunt.warp_cant_issue(all_stats)
     gather.add_sub_branch(tmpstats, hw_tree, 1, config)
-    if report.source_report_path is not None:
+    if report.source_report_path is not None or getattr(report, 'source_report_content', None):
         source_code_analysis.add_source_code_nodes(tmpstats, hw_tree, analysis, config)
 
     # pipe utilization is the subbranch of shadow_pipe_throttle
@@ -144,32 +144,27 @@ def work(report, dot_graph_name, memoryconfig, memory_metrics, config):
     print("save to dots/" + dot_graph_name + ".svg")
 
 
-def launch(report_path: str, source: str | None, memoryconfig: str | None, kernel_id: int | None,
-           output: str | None) -> None:
+def launch(report: Report, config: Configuration, memory_metrics: Memory_Metrics | None = None,
+           output: str | None = None) -> None:
     """
     Launch the program with the given arguments.
     Args:
-        report_path: The path of the report file.
-        source: path to the CSV source mapping exported from NCU. NCU model only.
-        memoryconfig: absolute path to the memory config or a file name in mem_config
-        kernel_id: ID of the kernel you want to analyze
-        output: path to the output decision tree file
+        report: The report data structure populated with report content.
+        config: Parsed GPU configuration data.
+        memory_metrics: The memory metrics object to update (optional).
+        output: Name of the output decision tree file (dot graph name).
     """
-    if memoryconfig is None:
-        memoryconfig = sys.path[0] + '/mem_config/gtx1650.ini'
-        print(
-            "You didn't specify running platform for this report. DrGPU will use gtx1650.ini " \
-                + "as the default GPU configuration.")
+    if report.kernel_id is None:
+        report.kernel_id = 0
+    report_path_display = report.path if report.path else "<in-memory>"
+    if report.source_report_path:
+        source_display = report.source_report_path
+    elif getattr(report, 'source_report_content', None) is not None:
+        source_display = "<in-memory>"
     else:
-        if not memoryconfig.endswith('.ini'):
-            memoryconfig += '.ini'
-        if not memoryconfig.startswith('/'):
-            memoryconfig = sys.path[0] + "/mem_config/" + memoryconfig
-    if kernel_id is None:
-        kernel_id = 0
-    print(f"Report path: {report_path}")
-    print(f"Source path: {source}")
-    report = Report(report_path, source, kernel_id)
-    memory_metrics = Memory_Metrics()
-    config = Configuration()
-    work(report, output, memoryconfig, memory_metrics, config)
+        source_display = None
+    print(f"Report path: {report_path_display}")
+    print(f"Source path: {source_display}")
+    if memory_metrics is None:
+        memory_metrics = Memory_Metrics()
+    work(report, output, memory_metrics, config)

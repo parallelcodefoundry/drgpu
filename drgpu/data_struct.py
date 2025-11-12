@@ -19,13 +19,17 @@ MEMORY_LATENCY_HIERARCHY = [('avg_latency', 'l1_latency'), ('l1_latency', 'tlb_l
 
 
 class Report:
-    def __init__(self, path='', source_report_path='', kernel_id=0):
+    def __init__(self, path='', source_report_path=None, kernel_id=0,
+                 report_content=None, source_report_content=None):
         self.path = path
         self.source_report_path = source_report_path
         # {unit_name: Unit, }
         self.units = {}
         # kernel id in ncu csv report
         self.kernel_id = kernel_id
+        # Raw contents of the reports when data is provided in-memory
+        self.report_content = report_content
+        self.source_report_content = source_report_content
 
 
 class Analysis:
