@@ -6,6 +6,7 @@ import os
 import sys
 from pathlib import Path
 import configparser
+from typing import List
 import numpy as np
 from drgpu import gather
 from drgpu import unit_hunt
@@ -192,7 +193,7 @@ def resolve_memory_config_path(config_arg: str | None) -> Path:
     Returns:
         The memory config path.
     """
-    base_dir = Path(sys.path[0])
+    base_dir = Path(os.path.dirname(__file__)).parent.absolute()
     if config_arg is None:
         print("You didn't specify running platform for this report. DrGPU will use "
                 "gtx1650.ini as the default GPU configuration.")
@@ -202,6 +203,16 @@ def resolve_memory_config_path(config_arg: str | None) -> Path:
     if not config_path.is_absolute():
         config_path = base_dir / 'mem_config' / config_name
     return config_path
+
+
+def get_config_list() -> List[str]:
+    """
+    Get the list of available config files under the mem_config folder.
+    Returns:
+        The list of available config files.
+    """
+    base_dir = Path(os.path.dirname(__file__)).parent.absolute()
+    return [os.path.basename(path) for path in (base_dir / 'mem_config').glob('*.ini')]
 
 
 def load_config(given_config: str) -> Configuration:
