@@ -3,7 +3,6 @@
 Launch the DrGPU tool.
 """
 import os
-import sys
 from pathlib import Path
 import configparser
 from typing import List
