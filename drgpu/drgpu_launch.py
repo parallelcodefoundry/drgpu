@@ -13,7 +13,8 @@ from drgpu import dot_graph
 from drgpu import suggestions
 from drgpu import read_reports
 from drgpu import source_code_analysis
-from drgpu.data_struct import Node, Analysis, Report, Memory_Metrics, Configuration
+from drgpu.data_struct import Analysis, Report, Memory_Metrics, Configuration
+from drgpu.node import Node
 
 def work(report: Report, dot_graph_name: str | None, memory_metrics: Memory_Metrics,
          config: Configuration, save_dot: bool = True) -> Node:

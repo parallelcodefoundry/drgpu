@@ -1,5 +1,5 @@
 import numpy as np
-from drgpu.data_struct import Node, SOURCE_CODE_NODE
+from drgpu.node import Node, SOURCE_CODE_NODE
 from drgpu.gather import find_node
 
 

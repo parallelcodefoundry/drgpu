@@ -1,7 +1,8 @@
 import gzip
 import json
 import functools
-from drgpu.data_struct import Node, Stat, Unit, SHOW_AS_RAW_VALUE, SHOW_AS_PERCENTAGE, LATENCY_NODE
+from drgpu.data_struct import Stat, Unit
+from drgpu.node import Node, SHOW_AS_RAW_VALUE, SHOW_AS_PERCENTAGE, LATENCY_NODE
 from drgpu.unit_hunt import add_l1_stats, add_utlb_stats, add_l1tlb_stats
 from drgpu.unit_hunt import add_l2_stats, add_fb_stats
 

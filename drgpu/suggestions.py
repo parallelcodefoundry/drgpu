@@ -1,6 +1,5 @@
 from drgpu.gather import find_node
-from drgpu.data_struct import Node
-from drgpu.data_struct import SUGGESTION_NODE
+from drgpu.node import Node, SUGGESTION_NODE
 
 
 def mio_throttle_short_scoreboard_common_suggest(stats, shared_mem_stats, memory_metrics, conflict_high_threshold):

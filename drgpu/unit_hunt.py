@@ -1,7 +1,8 @@
 import re
 import copy
 import numpy as np
-from drgpu.data_struct import Stat, node_name_map_counter
+from drgpu.data_struct import Stat
+from drgpu.node import NODE_NAME_MAP_COUNTER
 
 
 def add_to_tmp_stats(stats, final_stat_name, current_stat, suffix='', prefix=''):
@@ -31,14 +32,14 @@ def common_function_pattern(stats, pattern, name_list=None, prefix='', suffix=''
 
 
 def warp_cant_issue(stats):
-    return common_function_pattern(stats, "warp_cant_issue_(.*)", node_name_map_counter.keys(), suffix=' of no-issue cycles')
+    return common_function_pattern(stats, "warp_cant_issue_(.*)", NODE_NAME_MAP_COUNTER.keys(), suffix=' of no-issue cycles')
 
 
 def pipe_utilization(stats):
     """
     This function is used to filter the pipe_utilization counters
     """
-    return common_function_pattern(stats, r"^pipe_(.*)", node_name_map_counter.keys(), prefix='active ', suffix=' of total cycles')
+    return common_function_pattern(stats, r"^pipe_(.*)", NODE_NAME_MAP_COUNTER.keys(), prefix='active ', suffix=' of total cycles')
 
 
 def instruction_distribution(stats):
@@ -49,7 +50,7 @@ def instruction_distribution(stats):
 
 
 def cant_dispatch(stats):
-    return common_function_pattern(stats, r"cant_dispatch_(.*)", node_name_map_counter.keys(), suffix=" of dispatch stalls")
+    return common_function_pattern(stats, r"cant_dispatch_(.*)", NODE_NAME_MAP_COUNTER.keys(), suffix=" of dispatch stalls")
 
 #def barrier(stats):
 #    tmp_stats = {}
