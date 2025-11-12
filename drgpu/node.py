@@ -40,20 +40,25 @@ class Node:
 
 
     def get_tree_suggestions_str(self) -> str:
-        """Get a string of all suggestions in the tree with associated data and code nodes."""
+        """Get a string of all suggestions in the tree with associated data and code nodes.
+           The string is in Markdown format.
+        """
         suggestions = self.get_tree_suggestions()
         result = ""
-        for suggestion in suggestions:
-            result += "Suggestion: " + suggestion.suggestion.get_label(linewidth=None) + "\n"
+        for i, suggestion in enumerate(suggestions):
+            result += f"### DrGPU Suggestion {i + 1}\n"
+            result += "**Suggestion:** " + suggestion.suggestion.get_label(linewidth=None) + "\n"
             if suggestion.data is not None:
                 data_text = suggestion.data.get_label(linewidth=None).replace("\\n", ", ")
-                result += " * Associated delay reason: " + data_text + "\n"
+                result += "**Associated delay reason:** " + data_text + "\n"
             if suggestion.code is not None:
                 code_text = suggestion.code.get_label(linewidth=None).replace("\\l", "\n")
-                result += " * Code:\n" + code_text
+                result += "**Code:**\n" + code_text
+            if len(suggestion.other) > 0:
+                result += "**Additional details:** \n"
             for other_node in suggestion.other:
                 other_text = other_node.get_label(linewidth=None).replace("\\n", ", ")
-                result += " * Additional detail: " + other_text + "\n"
+                result += " * " + other_text + "\n"
             result += "\n"
         return result
 
