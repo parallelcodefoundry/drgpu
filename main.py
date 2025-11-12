@@ -33,23 +33,15 @@ def resolve_memory_config_path(config_arg: str | None) -> Path:
     return config_path
 
 
-def load_report_and_config(args: argparse.Namespace) -> tuple[Report, Configuration]:
+def load_config(given_config: str) -> Configuration:
     """
-    Load the report and config from the arguments.
+    Load the config from the given config name or path.
     Args:
-        args: The arguments.
+        given_config: The path to the memory config file or a file name in mem_config folder.
     Returns:
-        The report and config.
+        The config.
     """
-    report_path = Path(args.report_path)
-    report_content = report_path.read_text(encoding='utf-8')
-
-    source_path = Path(args.source) if args.source else None
-    source_content = None
-    if source_path:
-        source_content = source_path.read_text(encoding='utf-8')
-
-    memory_config_path = resolve_memory_config_path(args.memoryconfig)
+    memory_config_path = resolve_memory_config_path(given_config)
     if not memory_config_path.exists():
         raise FileNotFoundError(f"Memory config file {memory_config_path} doesn't exist")
     memory_config_content = memory_config_path.read_text(encoding='utf-8')
@@ -57,15 +49,34 @@ def load_report_and_config(args: argparse.Namespace) -> tuple[Report, Configurat
     config_parser.read_string(memory_config_content)
     config = read_reports.read_config(config_parser, Configuration(),
                                       source_name=str(memory_config_path))
+    return config
+
+
+def load_report(report_path: Path, source_path: Path | None = None,
+                kernel_id: int | None = None) -> Report:
+    """
+    Load the report from the path.
+    Args:
+        report_path: The path to the report.
+        source_path: The path to the source.
+        kernel_id: The kernel id.
+    Returns:
+        The report.
+    """
+    report_content = report_path.read_text(encoding='utf-8')
+
+    source_content = None
+    if source_path is not None:
+        source_content = source_path.read_text(encoding='utf-8')
 
     report = Report(
         path=str(report_path),
         source_report_path=str(source_path) if source_path else None,
-        kernel_id=int(args.kernel_id) if args.kernel_id else 0,
+        kernel_id=kernel_id if kernel_id is not None else 0,
         report_content=report_content,
         source_report_content=source_content,
     )
-    return report, config
+    return report
 
 
 def main():
@@ -90,7 +101,10 @@ def main():
                         dest='kernel_id', action='store')
     args = parser.parse_args()
 
-    report, config = load_report_and_config(args)
+    report = load_report(Path(args.report_path),
+                         Path(args.source) if args.source else None,
+                         int(args.kernel_id) if args.kernel_id else None)
+    config = load_config(args.memoryconfig)
     launch(report, config, output=args.output)
 
 
