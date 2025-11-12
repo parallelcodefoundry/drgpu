@@ -131,8 +131,11 @@ class Stat:
         #    _ for _ in self.SMs_value if self.SMs_value[_] == tmp_min_v]
 
 
+
 class Node:
-    """"""
+    """
+    A node in the decision tree.
+    """
 
     def __init__(self, aname, atype=NORMAL_TREE_NODE):
         """If the node is suggestion node, the stat would be empty."""
@@ -148,6 +151,99 @@ class Node:
         # 0: show as raw value
         # 1: show as percentage
         self.show_percentage_or_value = SHOW_AS_PERCENTAGE
+
+
+    def get_color(self) -> str:
+        """Get the color of the node."""
+        if self.type == SUGGESTION_NODE:
+            return 'mediumseagreen'
+        elif self.type == SOURCE_CODE_NODE:
+            return 'bisque'
+        elif self.type == LATENCY_NODE:
+            return 'lightsalmon'
+        else:
+            return 'lightgrey'
+
+
+    def get_label(self) -> str:
+        """Get the formatted label of the node."""
+        if self.name == 'root':
+            alabel = self.name
+        else:
+            if self.type == NORMAL_TREE_NODE or self.type == LATENCY_NODE:
+                tmp_nodename = self._get_tmp_nodename()
+                if self.percentage is None:
+                    tmpstr = ''
+                else:
+                    if self.show_percentage_or_value == SHOW_AS_PERCENTAGE:
+                        tmpstr = r"{:.2%}".format(self.percentage)
+                    else:
+                        if isinstance(self.percentage, float):
+                            tmpstr = r"{:.2f}".format(self.percentage)
+                        else:
+                            tmpstr = self.percentage
+                alabel = r"%s\n" % (self._break_to_multiple_lines(tmp_nodename, 25))
+                if self.prefix_label:
+                    alabel += r'%s' % self.prefix_label
+                alabel += r"%s" % str(tmpstr)
+                if self.suffix_label:
+                    alabel += r"%s" % self.suffix_label
+            # suggestion node
+            elif self.type == SUGGESTION_NODE:
+                # alabel = r"%s\n%s" % (tmp_nodename, break_to_multiple_lines(self.suffix_label, 25))
+                alabel = r"%s" % (self._break_to_multiple_lines(self.suffix_label, 25))
+            elif self.type == SOURCE_CODE_NODE:
+                alabel = r"%s" % self.suffix_label
+            else:
+                print("No such type of node", self.type)
+        return alabel
+
+
+    def _get_tmp_nodename(self) -> str:
+        """Get the temporary node name."""
+        pattern_name = [r"inst_executed_(.*)_ops", r"cant_dispatch_(.*)"]
+        tmp_nodename = None
+        if self.type == SUGGESTION_NODE:
+            tmp_nodename = "Suggestion"
+        elif self.type == SOURCE_CODE_NODE:
+            tmp_nodename = 'Source Code'
+        else:
+            mapped_name = node_name_map_counter.get(self.name)
+            if mapped_name is None:
+                for pattern in pattern_name:
+                    reg = re.compile(pattern)
+                    result = reg.findall(self.name)
+                    if result:
+                        tmp_nodename = result[0]
+                        break
+                if tmp_nodename is None:
+                    tmp_nodename = self.name
+            else:
+                tmp_nodename = mapped_name
+        return tmp_nodename
+
+
+    def _break_to_multiple_lines(self, inp: str, char_per_line: int) -> str:
+        """Break the input string into multiple lines."""
+        out = ""
+        splits = re.split(r"\s", inp)
+        cur_line = ""
+        for next_word in splits:
+            if len(next_word) >= char_per_line:
+                if cur_line != "":
+                    out += cur_line + "\n" + next_word + "\n"
+                else:
+                    out += next_word + "\n"
+                cur_line = ""
+            elif len(cur_line) + len(next_word) < char_per_line:
+                cur_line += " " + next_word
+            else:
+                out += cur_line + "\n"
+                cur_line = next_word
+        if cur_line != "":
+            out += cur_line
+        return out
+
 
 
 class Memory_Metrics:

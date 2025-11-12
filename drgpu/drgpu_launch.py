@@ -16,7 +16,7 @@ from drgpu import source_code_analysis
 from drgpu.data_struct import Node, Analysis, Report, Memory_Metrics, Configuration
 
 def work(report: Report, dot_graph_name: str | None, memory_metrics: Memory_Metrics,
-         config: Configuration):
+         config: Configuration, save_dot: bool = True) -> Node:
     """
     Carry out the analysis and generate the decision tree.
     Args:
@@ -24,6 +24,9 @@ def work(report: Report, dot_graph_name: str | None, memory_metrics: Memory_Metr
         dot_graph_name: The name of the dot graph.
         memory_metrics: The memory metrics object.
         config: The configuration object.
+        save_dot: Whether to save the dot graph (optional, default is True).
+    Returns:
+        The decision tree root node.
     """
     analysis = Analysis()
     # {stat_name: stat, } type:{str: Stat}
@@ -143,19 +146,25 @@ def work(report: Report, dot_graph_name: str | None, memory_metrics: Memory_Metr
     suggestions.short_scoreboard_suggest(hw_tree, all_stats, shared_mem_stats, config)
     suggestions.wait_suggestion(hw_tree, all_stats)
 
-    dot_graph.build_dot_graph(hw_tree, "dots/" + dot_graph_name)
-    print("save to dots/" + dot_graph_name + ".svg")
+    if save_dot:
+        dot_graph.build_dot_graph(hw_tree, "dots/" + dot_graph_name)
+        print("save to dots/" + dot_graph_name + ".svg")
+
+    return hw_tree
 
 
 def launch(report: Report, config: Configuration, memory_metrics: Memory_Metrics | None = None,
-           output: str | None = None) -> None:
+           output: str | None = None, save_dot: bool = True) -> Node:
     """
-    Launch the program with the given arguments.
+    Launch DrGPU with the given arguments.
     Args:
         report: The report data structure populated with report content.
         config: Parsed GPU configuration data.
         memory_metrics: The memory metrics object to update (optional).
         output: Name of the output decision tree file (dot graph name).
+        save_dot: Whether to save the dot graph (optional, default is True).
+    Returns:
+        The decision tree root node.
     """
     if report.kernel_id is None:
         report.kernel_id = 0
@@ -170,7 +179,8 @@ def launch(report: Report, config: Configuration, memory_metrics: Memory_Metrics
     print(f"Source path: {source_display}")
     if memory_metrics is None:
         memory_metrics = Memory_Metrics()
-    work(report, output, memory_metrics, config)
+    hw_tree = work(report, output, memory_metrics, config, save_dot=save_dot)
+    return hw_tree
 
 
 def resolve_memory_config_path(config_arg: str | None) -> Path:
