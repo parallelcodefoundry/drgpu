@@ -4,79 +4,9 @@ Main entry point file to parse arguments and launch DrGPU.
 """
 
 import argparse
-import configparser
-import sys
 from pathlib import Path
 
-from drgpu import read_reports
-from drgpu.data_struct import Configuration, Report
-from drgpu.drgpu_launch import launch
-
-
-def resolve_memory_config_path(config_arg: str | None) -> Path:
-    """
-    Resolve the memory config path.
-    Args:
-        config_arg: The memory config path or name.
-    Returns:
-        The memory config path.
-    """
-    base_dir = Path(sys.path[0])
-    if config_arg is None:
-        print("You didn't specify running platform for this report. DrGPU will use "
-                "gtx1650.ini as the default GPU configuration.")
-        return base_dir / 'mem_config' / 'gtx1650.ini'
-    config_name = config_arg if config_arg.endswith('.ini') else config_arg + '.ini'
-    config_path = Path(config_name)
-    if not config_path.is_absolute():
-        config_path = base_dir / 'mem_config' / config_name
-    return config_path
-
-
-def load_config(given_config: str) -> Configuration:
-    """
-    Load the config from the given config name or path.
-    Args:
-        given_config: The path to the memory config file or a file name in mem_config folder.
-    Returns:
-        The config.
-    """
-    memory_config_path = resolve_memory_config_path(given_config)
-    if not memory_config_path.exists():
-        raise FileNotFoundError(f"Memory config file {memory_config_path} doesn't exist")
-    memory_config_content = memory_config_path.read_text(encoding='utf-8')
-    config_parser = configparser.ConfigParser()
-    config_parser.read_string(memory_config_content)
-    config = read_reports.read_config(config_parser, Configuration(),
-                                      source_name=str(memory_config_path))
-    return config
-
-
-def load_report(report_path: Path, source_path: Path | None = None,
-                kernel_id: int | None = None) -> Report:
-    """
-    Load the report from the path.
-    Args:
-        report_path: The path to the report.
-        source_path: The path to the source.
-        kernel_id: The kernel id.
-    Returns:
-        The report.
-    """
-    report_content = report_path.read_text(encoding='utf-8')
-
-    source_content = None
-    if source_path is not None:
-        source_content = source_path.read_text(encoding='utf-8')
-
-    report = Report(
-        path=str(report_path),
-        source_report_path=str(source_path) if source_path else None,
-        kernel_id=kernel_id if kernel_id is not None else 0,
-        report_content=report_content,
-        source_report_content=source_content,
-    )
-    return report
+from drgpu.drgpu_launch import launch, load_report, load_config
 
 
 def main():
