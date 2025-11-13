@@ -1,11 +1,13 @@
 import gzip
 import json
 import functools
+import logging
 from drgpu.data_struct import Stat, Unit
 from drgpu.node import Node, SHOW_AS_RAW_VALUE, SHOW_AS_PERCENTAGE, LATENCY_NODE
 from drgpu.unit_hunt import add_l1_stats, add_utlb_stats, add_l1tlb_stats
 from drgpu.unit_hunt import add_l2_stats, add_fb_stats
 
+logger = logging.getLogger(__name__)
 
 def filter_unit_name(all_names):
     """check wether the instances is match with units"""
@@ -13,24 +15,24 @@ def filter_unit_name(all_names):
     unit_instance_names = []
     for name in all_names:
         if not name.endswith('json.gz'):
-            print("File %s is not regural json.gz file." % name)
+            logger.warning("File %s is not regular json.gz file.", name)
         else:
             if name.endswith('_instances.json.gz'):
                 unit_instance_names.append(name[:-len("_instances.json.gz")])
             else:
                 unit_names.append(name[:-len(".json.gz")])
     if unit_names != unit_instance_names:
-        print("There are some irregular files:")
+        logger.warning("There are some irregular files:")
         difference = (set(unit_instance_names) - set(unit_names)
                       ).union(set(unit_names) - set(unit_instance_names))
-        print(list(difference))
+        logger.warning(list(difference))
     return unit_names
 
 
 def build_unit(unit_name, path):
     # filter valus in XX.json.gz
     with gzip.open(path + "/" + unit_name + ".json.gz", 'rt', encoding='utf8') as zipfile:
-        print("Load ", unit_name, ".json.gz")
+        logger.debug("Load %s.json.gz", unit_name)
         unit_json = json.load(zipfile)
     # >>> unit_json.keys()
     # dict_keys(['Bottlenecks', 'SOL', 'aliases', 'instanceCount', 'instancesSummary', 'interfaces', 'name', 'pm_histogram_data', 'primaryOwnerEmail', 'primaryOwnerName', 'results'])
@@ -166,7 +168,7 @@ def add_sub_branch_for_longscoreboard_throughput(all_stats, bottleneck_unit, sta
 
     bottleneck_unit_latency_node = find_node(target_node, bottleneck_unit + "_latency")
     if not bottleneck_unit_latency_node:
-        print("Couldn't find throughput bottlneck node for ", bottleneck_unit)
+        logger.warning("Couldn't find throughput bottleneck node for %s", bottleneck_unit)
         return
     bottleneck_unit_latency_node.suffix_label += "\nutilized %.2f of elapased clocks" % stats['util_rate'].value
     del stats['util_rate']
@@ -211,7 +213,7 @@ def add_sub_branch_for_longscoreboard_latency(stats, target_node, all_stats, mem
                 add_l2_stats(unit_stats, all_stats, memory_metrics)
             elif (unit == "fb"):
                 add_fb_stats(unit_stats, all_stats, memory_metrics)
-            print(unit_stats)
+            logger.debug(unit_stats)
             for key in unit_stats:
                 stat = unit_stats[key]
                 node = Node(stat.name)
@@ -264,7 +266,7 @@ def add_branch_for_short_scoreboard(all_stats, shared_mem_stats, memory_metrics,
 
 def find_node(hw_tree, node_name):
     if hw_tree is None:
-        print("Error: You are trying to find %s in a none tree." % node_name)
+        raise ValueError(f"You are trying to find {node_name} in a none tree")
     tmp_queue = [hw_tree]
     while tmp_queue:
         anode: Node = tmp_queue.pop(0)

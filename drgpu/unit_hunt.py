@@ -1,9 +1,11 @@
 import re
 import copy
 import numpy as np
+import logging
 from drgpu.data_struct import Stat
 from drgpu.node import NODE_NAME_MAP_COUNTER
 
+logger = logging.getLogger(__name__)
 
 def add_to_tmp_stats(stats, final_stat_name, current_stat, suffix='', prefix=''):
     astat: Stat = stats.get(final_stat_name, None)
@@ -241,7 +243,7 @@ def long_scoreboard_throughput(stats, memory_metrics, config):
     gpcl1_tlb_hit = stats["gpcl1_tlb_hit"].value
     # All requests hit in utlb is possible.
     if gpcl1_tlb_hit + gpcl1_tlb_miss == 0:
-        print('No global load instruction.')
+        logger.warning('No global load instruction.')
         l1_tlb_miss_rate = 0
     else:
         l1_tlb_miss_rate = gpcl1_tlb_miss / (gpcl1_tlb_hit + gpcl1_tlb_miss)

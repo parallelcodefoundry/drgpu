@@ -1,6 +1,8 @@
+import logging
 from drgpu.gather import find_node
 from drgpu.node import Node, SUGGESTION_NODE
 
+logger = logging.getLogger(__name__)
 
 def mio_throttle_short_scoreboard_common_suggest(stats, shared_mem_stats, memory_metrics, conflict_high_threshold):
     conflict_suggestion = []
@@ -178,7 +180,7 @@ def memory_suggest(hw_tree, stats, bottleneck_unit, memory_metrics, config):
     if not l1_node:
         l1_node = find_node(hw_tree, "l1_latency")
     if not l1_node:
-        print("Can't find throughput or latency node for L1")
+        logger.warning("Can't find throughput or latency node for L1")
     else:
         # Case 1: the l1 throughput is close to peak number
         l1_throughput = memory_metrics.throughputs['l1']
@@ -221,7 +223,7 @@ def memory_suggest(hw_tree, stats, bottleneck_unit, memory_metrics, config):
     if (not l1tlb_node):
         l1tlb_node = find_node(hw_tree, "latency_tlb")
     if not l1tlb_node:
-        print("Can't find throughput or latency node for L1TLB")
+        logger.warning("Can't find throughput or latency node for L1TLB")
     else:
         l1_miss_rate_node = find_node(l1tlb_node, "l1_miss_rate")
         if l1_miss_rate_node:
@@ -245,7 +247,7 @@ def memory_suggest(hw_tree, stats, bottleneck_unit, memory_metrics, config):
     if not l2_node:
         l2_node = find_node(hw_tree, "l2_latency")
     if not l2_node:
-        print("Can't find throughput or latency node for L2")
+        logger.warning("Can't find throughput or latency node for L2")
     else:
         # across_load_coalescing_ratio
         if memory_metrics.l2_bank_conflict_rate is not None and memory_metrics.l2_bank_conflict_rate > config.high_l2_bank_conflict_rate:
@@ -259,7 +261,7 @@ def memory_suggest(hw_tree, stats, bottleneck_unit, memory_metrics, config):
             if not fb_node:
                 fb_node = find_node(hw_tree, "fb_latency")
             if not fb_node:
-                print("Can't find throughput or latency node for FB")
+                logger.warning("Can't find throughput or latency node for FB")
             else:
                 l2_miss_node = find_node(fb_node, "l2_miss_rate")
                 if l2_miss_node:
@@ -271,7 +273,7 @@ def memory_suggest(hw_tree, stats, bottleneck_unit, memory_metrics, config):
     if not fb_node:
         fb_node = find_node(hw_tree, "fb_latency")
     if not fb_node:
-        print("Can't find throughput or latency node for FB")
+        logger.warning("Can't find throughput or latency node for FB")
     else:
         if memory_metrics.l2_miss_rate is not None and memory_metrics.l2_miss_rate >= config.high_l2_miss_rate:
             l2_miss_node = find_node(fb_node, "l2_miss_rate")
@@ -335,7 +337,7 @@ def common_more_warps_suggestion(target_node, stats, hw_tree, suffix, config):
 
 def add_suggestion(target_node: Node | None, content, prefix=''):
     if not target_node:
-        print("Failed to add suggestion:", content)
+        logger.warning("Failed to add suggestion: %s", content)
         return
     s_node = Node("suggestion_for_%s_%d" % (target_node.name, len(target_node.child)))
     s_node.type = SUGGESTION_NODE

@@ -4,10 +4,12 @@ Main entry point file to parse arguments and launch DrGPU.
 """
 
 import argparse
+import logging
 from pathlib import Path
 
 from drgpu.drgpu_launch import launch, load_report, load_config
 
+logger = logging.getLogger(__name__)
 
 def main():
     """
@@ -29,15 +31,23 @@ def main():
     parser.add_argument('-id', '--id', metavar='ID',
                         help='ID of the kernel you want to analyze.', required=False,
                         dest='kernel_id', action='store')
+    parser.add_argument('-l', '--log-level', metavar='LEVEL',
+                        help='log level (DEBUG, INFO, WARNING, ERROR, CRITICAL).', required=False,
+                        action='store')
     args = parser.parse_args()
+
+    if args.log_level:
+        logging.basicConfig(level=args.log_level)
+    else:
+        logging.basicConfig(level=logging.INFO)
 
     report = load_report(Path(args.report_path),
                          Path(args.source) if args.source else None,
                          int(args.kernel_id) if args.kernel_id else None)
     config = load_config(args.memoryconfig)
     tree = launch(report, config, output=args.output)
-    print("\nSuggestions generated:")
-    print(tree.get_tree_suggestions_str(), end="")
+    logging.debug("\nSuggestions generated:")
+    logging.debug(tree.get_tree_suggestions_str(), end="")
 
 
 if __name__ == "__main__":

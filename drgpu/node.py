@@ -3,6 +3,9 @@ This file contains the Node class and associated constants.
 """
 import re
 from typing import List, Any
+import logging
+
+logger = logging.getLogger(__name__)
 
 NORMAL_TREE_NODE = 0
 SUGGESTION_NODE = 1
@@ -130,7 +133,7 @@ class Node:
             elif self.type == SOURCE_CODE_NODE:
                 alabel = r"%s" % self.suffix_label
             else:
-                print("No such type of node", self.type)
+                logger.warning("No such type of node %s", self.type)
         return alabel
 
 

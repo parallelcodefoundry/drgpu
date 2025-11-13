@@ -3,10 +3,12 @@ import os
 import configparser
 from io import StringIO
 import pandas as pd
+import logging
 from drgpu import counters
 from drgpu import source_code_analysis
 from drgpu.data_struct import Report, Analysis, Stat
 
+logger = logging.getLogger(__name__)
 
 def fill_report_ncu(report):
     if getattr(report, 'report_content', None) is not None:
@@ -20,8 +22,7 @@ def fill_report_ncu(report):
         reg2 = re.compile(r'ID,Time,API Call ID[\s\S]+')
         content = reg2.findall(raw_content)
         if not content:
-            print("Report is empty or wrong format. Path: %s" % (report.path))
-            exit(2)
+            raise ValueError(f"Report is empty or wrong format. Path: {report.path}")
     raw_counters_df = pd.read_csv(StringIO(content[0]), keep_default_na=False)
     return raw_counters_df
 
@@ -33,7 +34,7 @@ def select_all_counters_ncu(raw_counters_df, stats, kernel_id):
         cname_in_ncu = counter_value[0]
         if cname_in_ncu not in raw_counters_df_first.columns:
             missing = True
-            print("The report doesn't has this counter: %s -> %s" % (counter_name, cname_in_ncu))
+            logger.warning("The report doesn't has this counter: %s -> %s", counter_name, cname_in_ncu)
         else:
             as_type = counter_value[1]
             tmp_stat = Stat(counter_name, cname_in_ncu)
@@ -193,7 +194,7 @@ def read_config(config_source, config, *, source_name=None):
             raise KeyError('Memory config must contain "Default" section.')
         config_section = parser['Default']
     if source_name:
-        print('Use "%s" as memory config' % source_name)
+        logger.debug('Use "%s" as memory config', source_name)
     config.warp_size = int(config_section['warp_size'])
     config.quadrants_per_SM = int(config_section['quadrants_per_SM'])
     config.max_number_of_showed_nodes = int(config_section['max_number_of_showed_nodes'])
@@ -303,8 +304,7 @@ def convert_raw_item(aitem, as_type=float):
             else:
                 return int(aitem.replace(',', ''))
     else:
-        print("unrecognized type of %s " % str(aitem))
-        exit(-1)
+        raise ValueError(f"unrecognized type of {str(aitem)}")
 
 def get_kernel_name(raw_kernel_name):
     if len(raw_kernel_name) > 20:

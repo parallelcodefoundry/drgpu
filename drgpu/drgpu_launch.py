@@ -7,6 +7,7 @@ from pathlib import Path
 import configparser
 from typing import List
 import numpy as np
+import logging
 from drgpu import gather
 from drgpu import unit_hunt
 from drgpu import dot_graph
@@ -15,6 +16,8 @@ from drgpu import read_reports
 from drgpu import source_code_analysis
 from drgpu.data_struct import Analysis, Report, Memory_Metrics, Configuration
 from drgpu.node import Node
+
+logger = logging.getLogger(__name__)
 
 def work(report: Report, dot_graph_name: str | None, memory_metrics: Memory_Metrics,
          config: Configuration, save_dot: bool = True) -> Node:
@@ -49,7 +52,7 @@ def work(report: Report, dot_graph_name: str | None, memory_metrics: Memory_Metr
     if retire_ipc:
         root_percentage = retire_ipc.value / config.quadrants_per_SM
     else:
-        print("Could not get stat retireIPC")
+        logger.warning("Could not get stat retireIPC")
         root_percentage = 0
     hw_tree.percentage = 1 - root_percentage
 
@@ -81,7 +84,7 @@ def work(report: Report, dot_graph_name: str | None, memory_metrics: Memory_Metr
     tmpstats = unit_hunt.pipe_utilization(all_stats)
     target_node = gather.find_node(hw_tree, "warp_cant_issue_pipe_throttle")
     if not target_node:
-        print("Could not find the target node: warp_cant_issue_pipe_throttle")
+        logger.warning("Could not find the target node: warp_cant_issue_pipe_throttle")
     else:
         gather.add_pipe_throttle_branch(tmpstats, target_node, config)
 
@@ -89,7 +92,7 @@ def work(report: Report, dot_graph_name: str | None, memory_metrics: Memory_Metr
     tmpstats = unit_hunt.instruction_distribution(all_stats)
     target_node = gather.find_node(hw_tree, "warp_cant_issue_wait")
     if not target_node:
-        print("Could not find the target node: warp_cant_issue_wait")
+        logger.warning("Could not find the target node: warp_cant_issue_wait")
     else:
         gather.add_sub_branch(tmpstats, target_node, 1, config)
 
@@ -97,19 +100,19 @@ def work(report: Report, dot_graph_name: str | None, memory_metrics: Memory_Metr
     tmpstats = unit_hunt.cant_dispatch(all_stats)
     target_node = gather.find_node(hw_tree, "warp_cant_issue_dispatch")
     if not target_node:
-        print("Could not find the target node: warp_cant_issue_dispatch")
+        logger.warning("Could not find the target node: warp_cant_issue_dispatch")
     else:
         gather.add_sub_branch(tmpstats, target_node, 1, config)
 
     target_node = gather.find_node(hw_tree, "warp_cant_issue_lg_throttle")
     if not target_node:
-        print("Could not find the target node: warp_cant_issue_lg_throttle")
+        logger.warning("Could not find the target node: warp_cant_issue_lg_throttle")
     else:
         gather.add_lg_throttle_branch(all_stats, target_node, config)
 
     # target_node = gather.find_node(hw_tree, "warp_cant_issue_barrier")
     # if not target_node:
-    #     print("Could not find the target node: warp_cant_issue_barrier")
+    #     logger.warning("Could not find the target node: warp_cant_issue_barrier")
     # else:
     #     gather.add_sub_branch(tmpstats, target_node, 1)
 
@@ -149,7 +152,7 @@ def work(report: Report, dot_graph_name: str | None, memory_metrics: Memory_Metr
 
     if save_dot:
         dot_graph.build_dot_graph(hw_tree, "dots/" + dot_graph_name)
-        print("save to dots/" + dot_graph_name + ".svg")
+        logger.info("save to dots/" + dot_graph_name + ".svg")
 
     return hw_tree
 
@@ -176,8 +179,8 @@ def launch(report: Report, config: Configuration, memory_metrics: Memory_Metrics
         source_display = "<in-memory>"
     else:
         source_display = None
-    print(f"Report path: {report_path_display}")
-    print(f"Source path: {source_display}")
+    logger.debug("Report path: %s", report_path_display)
+    logger.debug("Source path: %s", source_display)
     if memory_metrics is None:
         memory_metrics = Memory_Metrics()
     hw_tree = work(report, output, memory_metrics, config, save_dot=save_dot)
@@ -194,8 +197,8 @@ def resolve_memory_config_path(config_arg: str | None) -> Path:
     """
     base_dir = Path(os.path.dirname(__file__)).parent.absolute()
     if config_arg is None:
-        print("You didn't specify running platform for this report. DrGPU will use "
-                "gtx1650.ini as the default GPU configuration.")
+        logger.warning("You didn't specify running platform for this report. DrGPU will use " \
+                + "gtx1650.ini as the default GPU configuration.")
         return base_dir / 'mem_config' / 'gtx1650.ini'
     config_name = config_arg if config_arg.endswith('.ini') else config_arg + '.ini'
     config_path = Path(config_name)
