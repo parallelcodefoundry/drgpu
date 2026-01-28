@@ -2,11 +2,13 @@ import re
 import os
 import configparser
 from io import StringIO
-import pandas as pd
 import logging
-from drgpu import counters
-from drgpu import source_code_analysis
-from drgpu.data_struct import Report, Analysis, Stat
+
+import pandas as pd
+
+import drgpu.drgpu.counters as counters
+import drgpu.drgpu.source_code_analysis as source_code_analysis
+from drgpu.drgpu.data_struct import Report, Analysis, Stat
 
 logger = logging.getLogger(__name__)
 

@@ -1,9 +1,11 @@
 import re
 import copy
-import numpy as np
 import logging
-from drgpu.data_struct import Stat
-from drgpu.node import NODE_NAME_MAP_COUNTER
+
+import numpy as np
+
+from drgpu.drgpu.data_struct import Stat
+from drgpu.drgpu.node import NODE_NAME_MAP_COUNTER
 
 logger = logging.getLogger(__name__)
 

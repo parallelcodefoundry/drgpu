@@ -1,5 +1,5 @@
 from graphviz import Digraph # type: ignore
-from drgpu.node import Node, MEMORY_LATENCY_HIERARCHY
+from drgpu.drgpu.node import Node, MEMORY_LATENCY_HIERARCHY
 
 colors = [
     "ivory", "aquamarine", "red", "chartreuse", "khaki", "hotpink", "dodgerblue", "gainsboro",

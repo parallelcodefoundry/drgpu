@@ -2,10 +2,10 @@ import gzip
 import json
 import functools
 import logging
-from drgpu.data_struct import Stat, Unit
-from drgpu.node import Node, SHOW_AS_RAW_VALUE, SHOW_AS_PERCENTAGE, LATENCY_NODE
-from drgpu.unit_hunt import add_l1_stats, add_utlb_stats, add_l1tlb_stats
-from drgpu.unit_hunt import add_l2_stats, add_fb_stats
+from drgpu.drgpu.data_struct import Stat, Unit
+from drgpu.drgpu.node import Node, SHOW_AS_RAW_VALUE, SHOW_AS_PERCENTAGE, LATENCY_NODE
+from drgpu.drgpu.unit_hunt import add_l1_stats, add_utlb_stats, add_l1tlb_stats
+from drgpu.drgpu.unit_hunt import add_l2_stats, add_fb_stats
 
 logger = logging.getLogger(__name__)
 

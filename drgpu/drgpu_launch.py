@@ -6,16 +6,19 @@ import os
 from pathlib import Path
 import configparser
 from typing import List
-import numpy as np
 import logging
-from drgpu import gather
-from drgpu import unit_hunt
-from drgpu import dot_graph
-from drgpu import suggestions
-from drgpu import read_reports
-from drgpu import source_code_analysis
-from drgpu.data_struct import Analysis, Report, Memory_Metrics, Configuration
-from drgpu.node import Node
+
+
+import numpy as np
+
+import drgpu.drgpu.gather as gather
+import drgpu.drgpu.unit_hunt as unit_hunt
+import drgpu.drgpu.dot_graph as dot_graph
+import drgpu.drgpu.suggestions as suggestions
+import drgpu.drgpu.read_reports as read_reports
+import drgpu.drgpu.source_code_analysis as source_code_analysis
+from drgpu.drgpu.data_struct import Analysis, Report, Memory_Metrics, Configuration
+from drgpu.drgpu.node import Node
 
 logger = logging.getLogger(__name__)
 

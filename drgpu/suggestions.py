@@ -1,6 +1,6 @@
 import logging
-from drgpu.gather import find_node
-from drgpu.node import Node, SUGGESTION_NODE
+from drgpu.drgpu.gather import find_node
+from drgpu.drgpu.node import Node, SUGGESTION_NODE
 
 logger = logging.getLogger(__name__)
 
