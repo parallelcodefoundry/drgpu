@@ -26,7 +26,7 @@ counters_name_map_for_ncu = {
     "pipe_adu": ("sm__inst_executed_pipe_adu.avg.pct_of_peak_sustained_active", float),
     "pipe_alu": ("sm__inst_executed_pipe_alu.avg.pct_of_peak_sustained_active", float),
     "pipe_cbu": ("sm__inst_executed_pipe_cbu.avg.pct_of_peak_sustained_active", float),
-    "pipe_fp16": ("sm__inst_executed_pipe_fp16.avg.pct_of_peak_sustained_active", float),
+    "pipe_fp16": ("sm__inst_executed_pipe_fma_type_fp16.avg.pct_of_peak_sustained_active", float),
     "pipe_fp64": ("sm__inst_executed_pipe_fp64.avg.pct_of_peak_sustained_active", float),
     "pipe_ipa": ("sm__inst_executed_pipe_ipa.avg.pct_of_peak_sustained_active", float),
     "pipe_lsu": ("sm__inst_executed_pipe_lsu.avg.pct_of_peak_sustained_active", float),
@@ -70,8 +70,8 @@ counters_name_map_for_ncu = {
     "inst_mem_shared_st_64b": ("", float),
     "inst_mem_shared_st_128b": ("", float),
 
-    "gnic_lg_read_requests_postcoalescing": ("", float),
-    "gnic_lg_read_requests_precoalescing": ("", float),
+    "gnic_lg_read_requests_postcoalescing": ("l1tex__t_output_wavefronts_pipe_lsu_mem_global_op_ld.sum", float),
+    "gnic_lg_read_requests_precoalescing": ("l1tex__t_requests_pipe_lsu_mem_global_op_ld.sum", float),
     # need to devided by 100
     "l1tex_hit_rate": ("l1tex__t_sector_hit_rate.pct", float),
     "l2_hit_rate": ("lts__t_sector_hit_rate.pct", float),
@@ -98,8 +98,8 @@ counters_name_map_for_ncu = {
     "l2_data_bank_accesses": ("", float),
     "l2_requests": ("lts__t_requests.sum", float),
     "fb_accesses_per_activate": ("", float),
-    "dram_util": ("", float),
-    "dram_throughput": ("", float),
+    "dram_util": ("dram__cycles_active.avg.pct_of_peak_sustained_elapsed", float),
+    "dram_throughput": ("dram__throughput.avg.pct_of_peak_sustained_elapsed", float),
     "average_latency_reads": ("", float),
     "average_latency_writes": ("", float),
     "average_dram_banks": ("", float),
@@ -107,12 +107,12 @@ counters_name_map_for_ncu = {
     "dram_noReq": ("", float),
     "dram_turns": ("", float),
     "launch_block_size": ("launch__block_size", float),
-    "imc_hitrate": ("", float),
+    "imc_hitrate": ("smsp__imc_request_hit_rate.pct", float),
     "activewarps_per_activecycle": ("sm__warps_active.avg.per_cycle_active", float),
     "shared_ld_data_conflicts": ("l1tex__data_bank_conflicts_pipe_lsu_mem_shared_op_ld.sum", float),
-    "shared_ld_requests": ("", float),
+    "shared_ld_requests": ("l1tex__t_requests_pipe_lsu_mem_dshared_op_ld.sum", float),
     "shared_st_data_conflicts": ("l1tex__data_bank_conflicts_pipe_lsu_mem_shared_op_st.sum", float),
-    "shared_st_requests": ("", float),
+    "shared_st_requests": ("l1tex__t_requests_pipe_lsu_mem_dshared_op_st.sum", float),
     "retireIPC": ("sm__inst_executed.avg.per_cycle_active", float),
     # for branch_solving_and_barrier_common, provided by 2020.3.0+
     "not_predicated_off_thread_per_inst_executed": (
@@ -130,6 +130,6 @@ counters_name_map_for_ncu = {
     "block_limit_register": ("launch__occupancy_limit_registers", float),
     "block_limit_warps": ("launch__occupancy_limit_warps", float),
     "register_per_thread": ("launch__registers_per_thread", int),
-    "kernel_name": ("Kernel Name", str),
+    "kernel_name": ("launch__kernel_name", str),
 
 }
